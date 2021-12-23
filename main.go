@@ -27,10 +27,15 @@ func main() {
 
 	cf := abciclient.NewLocalCreator(mnapp.NewPersistentKVStoreApplication("./db"))
 	go func() {
-		node.Start(&cf)
+		err = node.Start(cf)
+		if err != nil {
+			fmt.Println("over", err)
+		}
+
 	}()
 
 	client, err = cf()
+
 	var logger = log.MustNewDefaultLogger(log.LogFormatPlain, log.LogLevelInfo, false)
 	client.SetLogger(logger.With("module", "abci-client"))
 

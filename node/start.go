@@ -13,14 +13,12 @@ import (
 	tmnode "github.com/tendermint/tendermint/node"
 )
 
-var genesisHash []byte
-
-func Start(cf *abciclient.Creator) error {
+func Start(cf abciclient.Creator) error {
 	if err := checkGenesisHash(config); err != nil {
 		return err
 	}
 
-	n, err := tmnode.New(config, logger, *cf, nil)
+	n, err := tmnode.New(config, logger, cf, nil)
 	if err != nil {
 		return fmt.Errorf("failed to create node: %w", err)
 	}

@@ -18,10 +18,11 @@ import (
 )
 
 var (
-	keyType    = types.ABCIPubKeyTypeEd25519
-	config     *cfg.Config
-	logger     log.Logger
-	ctxTimeout = 4 * time.Second
+	keyType     = types.ABCIPubKeyTypeEd25519
+	config      *cfg.Config
+	logger      log.Logger
+	ctxTimeout  = 4 * time.Second
+	genesisHash []byte
 )
 
 func InitFiles(nodeType string) error {
@@ -33,9 +34,8 @@ func InitFiles(nodeType string) error {
 		return err
 	}
 
-	config.LogLevel = log.LogLevelWarn //
+	// config.LogLevel = log.LogLevelWarn //
 	config.Mode = nodeType
-
 	logger, err = log.NewDefaultLogger(config.LogFormat, config.LogLevel, false)
 	if err != nil {
 		return err
