@@ -76,11 +76,12 @@ func initFilesWithConfig(config *cfg.Config) error {
 	} else {
 
 		genDoc := types.GenesisDoc{
-			ChainID:         fmt.Sprintf("test-chain-%v", tmrand.Str(6)),
+			ChainID:         fmt.Sprintf("metanet-chain-%v", tmrand.Str(6)),
 			GenesisTime:     tmtime.Now(),
 			ConsensusParams: types.DefaultConsensusParams(),
 		}
-		if keyType == "secp256k1" {
+
+		if keyType == types.ABCIPubKeyTypeSecp256k1 {
 			genDoc.ConsensusParams.Validator = types.ValidatorParams{
 				PubKeyTypes: []string{types.ABCIPubKeyTypeSecp256k1},
 			}

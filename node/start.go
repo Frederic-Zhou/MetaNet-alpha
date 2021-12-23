@@ -7,6 +7,8 @@ import (
 	"io"
 	"os"
 
+	"github.com/Frederic-Zhou/MetaNet-alpha/app"
+	abciclient "github.com/tendermint/tendermint/abci/client"
 	cfg "github.com/tendermint/tendermint/config"
 	tmos "github.com/tendermint/tendermint/libs/os"
 	tmnode "github.com/tendermint/tendermint/node"
@@ -19,7 +21,8 @@ func Start() error {
 		return err
 	}
 
-	n, err := tmnode.NewDefault(config, logger)
+	cr := abciclient.NewLocalCreator(app.NewApplication())
+	n, err := tmnode.New(config, logger, cr, nil)
 	if err != nil {
 		return fmt.Errorf("failed to create node: %w", err)
 	}

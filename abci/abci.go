@@ -14,18 +14,10 @@ import (
 	"github.com/tendermint/tendermint/libs/log"
 )
 
-var logger log.Logger
-var app types.Application
-
-func init() {
-	logger = log.MustNewDefaultLogger(log.LogFormatPlain, log.LogLevelInfo, false)
-
-	// Create the application - in memory or persisted to disk
-	app = kvstore.NewApplication()
-	// app = kvstore.NewPersistentKVStoreApplication("./db")
-	// app.(*kvstore.PersistentKVStoreApplication).SetLogger(logger.With("module", "kvstore"))
-
-}
+var (
+	logger log.Logger        = log.MustNewDefaultLogger(log.LogFormatPlain, log.LogLevelInfo, false)
+	app    types.Application = kvstore.NewApplication()
+)
 
 func NewClient() (*abciclient.Client, error) {
 	var client abciclient.Client
@@ -44,7 +36,7 @@ func NewClient() (*abciclient.Client, error) {
 	return &client, nil
 }
 
-func RunAsServer() error {
+func RunAsSocketServer() error {
 	// Start the listener
 	srv, err := server.NewServer("tcp://0.0.0.0:26658", "socket", app)
 	if err != nil {
