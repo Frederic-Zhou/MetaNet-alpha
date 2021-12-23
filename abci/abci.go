@@ -1,4 +1,4 @@
-package main
+package abci
 
 import (
 	"context"
@@ -44,7 +44,7 @@ func NewClient() (*abciclient.Client, error) {
 	return &client, nil
 }
 
-func RunAbciServer() error {
+func RunAsServer() error {
 	// Start the listener
 	srv, err := server.NewServer("tcp://0.0.0.0:26658", "socket", app)
 	if err != nil {
