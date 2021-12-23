@@ -68,7 +68,7 @@ type Application struct {
 	RetainBlocks int64 // blocks to retain after commit (via ResponseCommit.RetainHeight)
 }
 
-func NewApplication() *Application {
+func NewKVStoreApplication() *Application {
 	state := loadState(dbm.NewMemDB())
 	return &Application{state: state}
 }

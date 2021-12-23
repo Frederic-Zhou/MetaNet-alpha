@@ -7,7 +7,6 @@ import (
 	"io"
 	"os"
 
-	mnapp "github.com/Frederic-Zhou/MetaNet-alpha/app"
 	abciclient "github.com/tendermint/tendermint/abci/client"
 	cfg "github.com/tendermint/tendermint/config"
 	tmos "github.com/tendermint/tendermint/libs/os"
@@ -16,13 +15,12 @@ import (
 
 var genesisHash []byte
 
-func Start() error {
+func Start(cf *abciclient.Creator) error {
 	if err := checkGenesisHash(config); err != nil {
 		return err
 	}
 
-	cr := abciclient.NewLocalCreator(mnapp.NewApplication())
-	n, err := tmnode.New(config, logger, cr, nil)
+	n, err := tmnode.New(config, logger, *cf, nil)
 	if err != nil {
 		return fmt.Errorf("failed to create node: %w", err)
 	}

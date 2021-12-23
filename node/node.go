@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/spf13/viper"
 	cfg "github.com/tendermint/tendermint/config"
 	"github.com/tendermint/tendermint/libs/log"
 	tmos "github.com/tendermint/tendermint/libs/os"
@@ -18,15 +19,29 @@ import (
 
 var (
 	keyType    = types.ABCIPubKeyTypeEd25519
-	config     = cfg.DefaultConfig()
-	logger     = log.MustNewDefaultLogger(log.LogFormatPlain, log.LogLevelInfo, false)
+	config     *cfg.Config
+	logger     log.Logger
 	ctxTimeout = 4 * time.Second
 )
 
 func InitFiles(nodeType string) error {
 	//"must specify a node type: tendermint init [validator|full|seed]"
+
+	var err error
+	config, err = parseConfig()
+	if err != nil {
+		return err
+	}
+
+	config.LogLevel = log.LogLevelWarn //
 	config.Mode = nodeType
-	config.SetRoot(os.ExpandEnv(filepath.Join("$HOME", cfg.DefaultTendermintDir)))
+
+	logger, err = log.NewDefaultLogger(config.LogFormat, config.LogLevel, false)
+	if err != nil {
+		return err
+	}
+	logger = logger.With("module", "main")
+
 	return initFilesWithConfig(config)
 }
 
@@ -116,4 +131,19 @@ func initFilesWithConfig(config *cfg.Config) error {
 	logger.Info("Generated config", "mode", config.Mode)
 
 	return nil
+}
+
+func parseConfig() (*cfg.Config, error) {
+	conf := cfg.DefaultConfig()
+	conf.SetRoot(os.ExpandEnv(filepath.Join("$HOME", cfg.DefaultTendermintDir)))
+	err := viper.Unmarshal(conf)
+	if err != nil {
+		return nil, err
+	}
+
+	cfg.EnsureRoot(conf.RootDir)
+	if err := conf.ValidateBasic(); err != nil {
+		return nil, fmt.Errorf("error in config file: %v", err)
+	}
+	return conf, nil
 }

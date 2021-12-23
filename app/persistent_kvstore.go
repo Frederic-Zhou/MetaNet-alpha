@@ -35,7 +35,7 @@ type PersistentKVStoreApplication struct {
 }
 
 func NewPersistentKVStoreApplication(dbDir string) *PersistentKVStoreApplication {
-	name := "kvstore"
+	name := "kvstore-persistent"
 	db, err := dbm.NewGoLevelDB(name, dbDir)
 	if err != nil {
 		panic(err)
