@@ -7,8 +7,8 @@ import (
 
 	"syscall"
 
+	mnapp "github.com/Frederic-Zhou/MetaNet-alpha/app"
 	abciclient "github.com/tendermint/tendermint/abci/client"
-	"github.com/tendermint/tendermint/abci/example/kvstore"
 	"github.com/tendermint/tendermint/abci/server"
 	"github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/log"
@@ -16,7 +16,7 @@ import (
 
 var (
 	logger log.Logger        = log.MustNewDefaultLogger(log.LogFormatPlain, log.LogLevelInfo, false)
-	app    types.Application = kvstore.NewApplication()
+	app    types.Application = mnapp.NewApplication()
 )
 
 func NewClient() (*abciclient.Client, error) {
