@@ -1,48 +1,136 @@
 package node
 
 import (
+	"bytes"
 	"context"
+	"crypto/sha256"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"time"
 
 	"github.com/spf13/viper"
-	cfg "github.com/tendermint/tendermint/config"
+	"github.com/tendermint/tendermint/libs/service"
+
+	abciclient "github.com/tendermint/tendermint/abci/client"
+
 	"github.com/tendermint/tendermint/libs/log"
-	tmos "github.com/tendermint/tendermint/libs/os"
+
 	tmrand "github.com/tendermint/tendermint/libs/rand"
 	tmtime "github.com/tendermint/tendermint/libs/time"
 	"github.com/tendermint/tendermint/privval"
 	"github.com/tendermint/tendermint/types"
+
+	mnapp "github.com/Frederic-Zhou/MetaNet-alpha/app"
+	cfg "github.com/tendermint/tendermint/config"
+	tmos "github.com/tendermint/tendermint/libs/os"
+	tmnode "github.com/tendermint/tendermint/node"
+	rpclocal "github.com/tendermint/tendermint/rpc/client/local"
 )
 
 var (
-	keyType     = types.ABCIPubKeyTypeEd25519
+	keyType     = types.ABCIPubKeyTypeEd25519 //目前没有作用
 	config      *cfg.Config
 	logger      log.Logger
 	ctxTimeout  = 4 * time.Second
-	genesisHash []byte
+	genesisHash []byte //目前没有作用
+	node        service.Service
+	client      *rpclocal.Local
 )
 
-func InitFiles(nodeType string) error {
-	//"must specify a node type: tendermint init [validator|full|seed]"
+func InitConfig(nodeType string) (err error) {
 
-	var err error
 	config, err = parseConfig()
 	if err != nil {
 		return err
 	}
-
-	// config.LogLevel = log.LogLevelWarn //
-	config.Mode = nodeType
-	logger, err = log.NewDefaultLogger(config.LogFormat, config.LogLevel, false)
-	if err != nil {
-		return err
-	}
-	logger = logger.With("module", "main")
+	logger = log.MustNewDefaultLogger(config.LogFormat, config.LogLevel, false).With("module", "main")
+	config.Mode = nodeType   //"指定节点类型: one of [validator|full|seed]"
+	config.RPC.Unsafe = true //这样设置可以使用接口Dial_peers加入节点
+	config.Consensus.CreateEmptyBlocks = false
 
 	return initFilesWithConfig(config)
+}
+
+func InitNode() (err error) {
+	if err = checkGenesisHash(config); err != nil {
+		return
+	}
+
+	cf := abciclient.NewLocalCreator(mnapp.NewPersistentKVStoreApplication("./db"))
+
+	node, err = tmnode.New(config, logger, cf, nil)
+	if err != nil {
+		err = fmt.Errorf("failed to create node: %w", err)
+		return
+	}
+
+	return
+}
+
+func GetClient() (*rpclocal.Local, error) {
+
+	var err error
+	if client == nil {
+		ns, ok := node.(rpclocal.NodeService)
+		if !ok {
+			err = fmt.Errorf("failed asset Node to NodeService")
+			return client, err
+		}
+		client, err = rpclocal.New(ns)
+	}
+
+	return client, err
+}
+
+func Start() error {
+
+	if err := node.Start(); err != nil {
+		return fmt.Errorf("failed to start node: %w", err)
+	}
+
+	logger.Info("started node", "node", node.String())
+
+	// Stop upon receiving SIGTERM or CTRL-C.
+	tmos.TrapSignal(logger, func() {
+		if node.IsRunning() {
+			if err := node.Stop(); err != nil {
+				logger.Error("unable to stop the node", "error", err)
+			}
+		}
+	})
+
+	// Run forever.
+	select {}
+
+}
+
+func checkGenesisHash(config *cfg.Config) error {
+	if len(genesisHash) == 0 || config.Genesis == "" {
+		return nil
+	}
+
+	// Calculate SHA-256 hash of the genesis file.
+	f, err := os.Open(config.GenesisFile())
+	if err != nil {
+		return fmt.Errorf("can't open genesis file: %w", err)
+	}
+	defer f.Close()
+	h := sha256.New()
+	if _, err := io.Copy(h, f); err != nil {
+		return fmt.Errorf("error when hashing genesis file: %w", err)
+	}
+	actualHash := h.Sum(nil)
+
+	// Compare with the flag.
+	if !bytes.Equal(genesisHash, actualHash) {
+		return fmt.Errorf(
+			"--genesis-hash=%X does not match %s hash: %X",
+			genesisHash, config.GenesisFile(), actualHash)
+	}
+
+	return nil
 }
 
 func initFilesWithConfig(config *cfg.Config) error {
