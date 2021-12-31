@@ -11,9 +11,8 @@ import (
 	"time"
 
 	"github.com/spf13/viper"
-	"github.com/tendermint/tendermint/libs/service"
-
 	abciclient "github.com/tendermint/tendermint/abci/client"
+	"github.com/tendermint/tendermint/libs/service"
 
 	"github.com/tendermint/tendermint/libs/log"
 
@@ -58,7 +57,8 @@ func InitNode() (err error) {
 		return
 	}
 
-	cf := abciclient.NewLocalCreator(mnapp.NewPersistentKVStoreApplication("./db"))
+	app := mnapp.NewPersistentKVStoreApplication("./db")
+	cf := abciclient.NewLocalCreator(app)
 
 	node, err = tmnode.New(config, logger, cf, nil)
 	if err != nil {
@@ -233,5 +233,6 @@ func parseConfig() (*cfg.Config, error) {
 	if err := conf.ValidateBasic(); err != nil {
 		return nil, fmt.Errorf("error in config file: %v", err)
 	}
+
 	return conf, nil
 }
