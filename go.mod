@@ -15,16 +15,27 @@ require (
 )
 
 require (
+	github.com/armon/go-metrics v0.3.10 // indirect
 	github.com/btcsuite/btcd v0.22.0-beta // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
+	github.com/hashicorp/errwrap v1.0.0 // indirect
+	github.com/hashicorp/go-immutable-radix v1.3.1 // indirect
+	github.com/hashicorp/go-msgpack v0.5.3 // indirect
+	github.com/hashicorp/go-multierror v1.1.1 // indirect
+	github.com/hashicorp/go-sockaddr v1.0.0 // indirect
+	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
+	github.com/hashicorp/logutils v1.0.0 // indirect
+	github.com/hashicorp/memberlist v0.3.0 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
+	github.com/miekg/dns v1.1.43 // indirect
 	github.com/mitchellh/mapstructure v1.4.3 // indirect
 	github.com/oasisprotocol/curve25519-voi v0.0.0-20210609091139-0a56a4bca00b // indirect
 	github.com/pelletier/go-toml v1.9.4 // indirect
 	github.com/petermattis/goid v0.0.0-20180202154549-b0b1615b78e5 // indirect
 	github.com/sasha-s/go-deadlock v0.2.1-0.20190427202633-1595213edefa // indirect
+	github.com/sean-/seed v0.0.0-20170313163322-e2103e2c3529 // indirect
 	github.com/spf13/afero v1.6.0 // indirect
 	github.com/spf13/cast v1.4.1 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
@@ -55,6 +66,7 @@ require (
 	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0 // indirect
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0 // indirect
+	github.com/hashicorp/serf v0.9.6
 	github.com/jmhodges/levigo v1.0.0 // indirect
 	github.com/lib/pq v1.10.3 // indirect
 	github.com/libp2p/go-buffer-pool v0.0.2 // indirect

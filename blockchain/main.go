@@ -6,11 +6,11 @@ import (
 	"os"
 	"time"
 
-	"github.com/Frederic-Zhou/MetaNet-alpha/node"
+	"github.com/Frederic-Zhou/MetaNet-alpha/blockchain/node"
 	// localRpcClient "github.com/tendermint/tendermint/rpc/client/local"
 )
 
-func main() {
+func main_for_tendermint() {
 	err := node.InitConfig("validator")
 	if err != nil {
 		os.Exit(0)

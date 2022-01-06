@@ -21,7 +21,7 @@ import (
 	"github.com/tendermint/tendermint/privval"
 	"github.com/tendermint/tendermint/types"
 
-	mnapp "github.com/Frederic-Zhou/MetaNet-alpha/app"
+	mnapp "github.com/Frederic-Zhou/MetaNet-alpha/blockchain/app"
 	cfg "github.com/tendermint/tendermint/config"
 	tmos "github.com/tendermint/tendermint/libs/os"
 	tmnode "github.com/tendermint/tendermint/node"
