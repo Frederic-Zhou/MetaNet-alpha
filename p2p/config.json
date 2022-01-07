@@ -7,8 +7,6 @@
         "datacenter": "office"
     },
     "event_handlers": [
-        "echo hello ----- $SERF_EVENT",
-        "user:do=do.sh",
-        "query:msg=msg.sh"
+        "python3 ./eventhandler.py"
     ]
 }

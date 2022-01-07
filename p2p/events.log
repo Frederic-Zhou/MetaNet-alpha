@@ -1,4 +1,9 @@
-
-
-member-join
-member-leave
+member-join|MacBook-Pro.local None:MacBook-Pro.local	127.0.0.1	member	datacenter=office,role=member
+query|MacBook-Pro.local say:adsfasf
+member-join|MacBook-Pro.local None:MacBook-Pro.local	127.0.0.1	member	datacenter=office,role=member
+user|MacBook-Pro.local hi:hh
+query|MacBook-Pro.local say:哈哈哈哈
+member-join MacBook-Pro.local :MacBook-Pro.local	127.0.0.1	member	datacenter=office,role=member
+query MacBook-Pro.local say:good
+query MacBook-Pro.local say:还可以
+query MacBook-Pro.local say:也是不致于
