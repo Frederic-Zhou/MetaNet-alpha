@@ -1,119 +1,231 @@
 package main
 
 import (
-	"bufio"
-	"bytes"
+	"encoding/json"
 	"flag"
 	"fmt"
+	"net/http"
 	"os"
-	"os/exec"
 	"strings"
-	"syscall"
+	"sync"
 
-	"github.com/hpcloud/tail"
-	"github.com/pterm/pterm"
+	"github.com/hashicorp/memberlist"
+	"github.com/pborman/uuid"
 )
 
-var serfPath = "serf"
+var (
+	mtx        sync.RWMutex
+	members    = flag.String("members", "", "comma seperated list of members")
+	port       = flag.Int("port", 8800, "http port")
+	items      = map[string]string{} //存储，此处需要修改为持久性存储
+	broadcasts *memberlist.TransmitLimitedQueue
+)
 
-func main() {
+type broadcast struct {
+	msg    []byte
+	notify chan<- struct{}
+}
 
-	flag.StringVar(&serfPath, "serf-path", "serf", "serf-path: ./serf.exe")
+type delegate struct{}
+
+type update struct {
+	Action string // add, del
+	Data   map[string]string
+}
+
+func init() {
 	flag.Parse()
-
-	startArgs := []string{
-		"agent",
-		"-config-file=./config.json",
-	}
-	output := bytes.NewBuffer([]byte{})
-
-	//打开节点程序
-	go func() {
-		if err := Run(serfPath, startArgs, output); err != nil {
-			fmt.Println(err)
-			os.Exit(0)
-		}
-	}()
-
-	//读取event日志
-	go func() {
-		if err := tailFile(); err != nil {
-			fmt.Println(err)
-			os.Exit(0)
-		}
-
-	}()
-
-	input := bufio.NewScanner(os.Stdin)
-	fmt.Printf("Please type in something:\n")
-INPUT:
-	for input.Scan() {
-		line := strings.TrimSpace(input.Text())
-
-		switch {
-		case line == "bye":
-			break INPUT
-		case len(line) > 0: //转发命令给serf，如果没有匹配的命令，默认 query say xxx
-			var spinnerSuccess *pterm.SpinnerPrinter
-			spinnerSuccess, _ = pterm.DefaultSpinner.Start("Sending...")
-			cmd_output := bytes.NewBuffer([]byte{})
-
-			if err := Run(serfPath, strings.Split(line, " "), cmd_output); err != nil {
-
-				cmd_output.Truncate(0)
-				queryArg := []string{
-					"query", "say", line,
-				}
-
-				if err := Run(serfPath, queryArg, cmd_output); err != nil {
-					spinnerSuccess.Warning(cmd_output.String(), err)
-					continue
-				}
-			}
-
-			spinnerSuccess.Success(cmd_output.String())
-		}
-
-	}
-	fmt.Println("Bye!!")
-	// "while read line;do \n echo '${SERF_EVENT} from ${SERF_SELF_NAME}: ${line}'>>events.log \n done \n echo '收到'"
 }
 
-func Run(name string, args []string, output *bytes.Buffer) (err error) {
-	cmd := exec.Command(name, args...)
-	cmd.Stdout = output
-	cmd.Stderr = output
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: false}
-	err = cmd.Run()
-	return
+func (b *broadcast) Invalidates(other memberlist.Broadcast) bool {
+	return false
 }
 
-func tailFile() (err error) {
+func (b *broadcast) Message() []byte {
+	return b.msg
+}
 
-	t, err := tail.TailFile("./events.log", tail.Config{Follow: true})
-	if err != nil {
+func (b *broadcast) Finished() {
+	if b.notify != nil {
+		close(b.notify)
+	}
+}
+
+func (d *delegate) NodeMeta(limit int) []byte {
+	return []byte{}
+}
+
+func (d *delegate) NotifyMsg(b []byte) {
+	if len(b) == 0 {
 		return
 	}
 
-	for line := range t.Lines {
-
-		txt := line.Text
-		eventSimbolIndex := strings.Index(txt, ":")
-		switch {
-		case eventSimbolIndex > 0 && strings.HasPrefix(txt, "query"):
-			pterm.DefaultBox.
-				WithBoxStyle(pterm.NewStyle(pterm.FgLightBlue)).
-				WithTextStyle(pterm.NewStyle(pterm.FgLightYellow)).
-				WithTitle(txt[:eventSimbolIndex+1]).
-				Println(txt[eventSimbolIndex+1:])
-		default:
-			pterm.DefaultBox.
-				WithBoxStyle(pterm.NewStyle(pterm.FgDarkGray)).
-				WithTextStyle(pterm.NewStyle(pterm.FgDarkGray)).
-				WithTitle("event").
-				Println(txt)
+	switch b[0] {
+	case 'd': // data
+		var updates []*update
+		if err := json.Unmarshal(b[1:], &updates); err != nil {
+			return
 		}
-
+		mtx.Lock()
+		for _, u := range updates {
+			for k, v := range u.Data {
+				switch u.Action {
+				case "add":
+					items[k] = v
+				case "del":
+					delete(items, k)
+				}
+			}
+		}
+		mtx.Unlock()
 	}
-	return
+}
+
+func (d *delegate) GetBroadcasts(overhead, limit int) [][]byte {
+	return broadcasts.GetBroadcasts(overhead, limit)
+}
+
+func (d *delegate) LocalState(join bool) []byte {
+	mtx.RLock()
+	m := items
+	mtx.RUnlock()
+	b, _ := json.Marshal(m)
+	return b
+}
+
+func (d *delegate) MergeRemoteState(buf []byte, join bool) {
+	if len(buf) == 0 {
+		return
+	}
+	if !join {
+		return
+	}
+	var m map[string]string
+	if err := json.Unmarshal(buf, &m); err != nil {
+		return
+	}
+	mtx.Lock()
+	for k, v := range m {
+		items[k] = v
+	}
+	mtx.Unlock()
+}
+
+type eventDelegate struct{}
+
+func (ed *eventDelegate) NotifyJoin(node *memberlist.Node) {
+	fmt.Println("A node has joined: " + node.String())
+}
+
+func (ed *eventDelegate) NotifyLeave(node *memberlist.Node) {
+	fmt.Println("A node has left: " + node.String())
+}
+
+func (ed *eventDelegate) NotifyUpdate(node *memberlist.Node) {
+	fmt.Println("A node was updated: " + node.String())
+}
+
+func addHandler(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	key := r.Form.Get("key")
+	val := r.Form.Get("val")
+	mtx.Lock()
+	items[key] = val
+	mtx.Unlock()
+
+	b, err := json.Marshal([]*update{
+		{
+			Action: "add",
+			Data: map[string]string{
+				key: val,
+			},
+		},
+	})
+
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+
+	broadcasts.QueueBroadcast(&broadcast{
+		msg:    append([]byte("d"), b...),
+		notify: nil,
+	})
+}
+
+func delHandler(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	key := r.Form.Get("key")
+	mtx.Lock()
+	delete(items, key)
+	mtx.Unlock()
+
+	b, err := json.Marshal([]*update{{
+		Action: "del",
+		Data: map[string]string{
+			key: "",
+		},
+	}})
+
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+
+	broadcasts.QueueBroadcast(&broadcast{
+		msg:    append([]byte("d"), b...),
+		notify: nil,
+	})
+}
+
+func getHandler(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	key := r.Form.Get("key")
+	mtx.RLock()
+	val := items[key]
+	mtx.RUnlock()
+	w.Write([]byte(val))
+}
+
+func start() error {
+	hostname, _ := os.Hostname()
+	c := memberlist.DefaultLocalConfig()
+	c.Events = &eventDelegate{}
+	c.Delegate = &delegate{}
+	c.BindPort = 0
+	c.Name = hostname + "-" + uuid.NewUUID().String()
+	m, err := memberlist.Create(c)
+	if err != nil {
+		return err
+	}
+	if len(*members) > 0 {
+		parts := strings.Split(*members, ",")
+		_, err := m.Join(parts)
+		if err != nil {
+			return err
+		}
+	}
+	broadcasts = &memberlist.TransmitLimitedQueue{
+		NumNodes: func() int {
+			return m.NumMembers()
+		},
+		RetransmitMult: 3,
+	}
+	node := m.LocalNode()
+	fmt.Printf("Local member %s:%d\n", node.Addr, node.Port)
+	return nil
+}
+
+func main() {
+	if err := start(); err != nil {
+		fmt.Println(err)
+	}
+
+	http.HandleFunc("/add", addHandler)
+	http.HandleFunc("/del", delHandler)
+	http.HandleFunc("/get", getHandler)
+	fmt.Printf("Listening on :%d\n", *port)
+	if err := http.ListenAndServe(fmt.Sprintf(":%d", *port), nil); err != nil {
+		fmt.Println(err)
+	}
 }
