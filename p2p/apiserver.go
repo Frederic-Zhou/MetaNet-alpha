@@ -7,7 +7,7 @@ import (
 	"net/http"
 )
 
-func addHandler(w http.ResponseWriter, r *http.Request) {
+func putHandler(w http.ResponseWriter, r *http.Request) {
 
 	r.ParseForm()
 	key := r.Form.Get("key")
@@ -18,7 +18,7 @@ func addHandler(w http.ResponseWriter, r *http.Request) {
 
 	b, err := json.Marshal([]*update{
 		{
-			Action: "add",
+			Action: "put",
 			Data: map[string]string{
 				key: val,
 			},
@@ -35,7 +35,7 @@ func addHandler(w http.ResponseWriter, r *http.Request) {
 		notify: nil,
 	})
 
-	w.Write([]byte("add success"))
+	w.Write([]byte("put success"))
 }
 
 func delHandler(w http.ResponseWriter, r *http.Request) {

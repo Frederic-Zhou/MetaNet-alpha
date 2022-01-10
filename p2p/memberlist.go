@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"os"
 	"sync"
@@ -12,8 +13,7 @@ import (
 )
 
 var (
-	mtx sync.RWMutex
-	// items      = map[string]string{} //存储，此处需要修改为持久性存储
+	mtx        sync.RWMutex
 	broadcasts *memberlist.TransmitLimitedQueue
 	memberList *memberlist.Memberlist
 	mdnsInfo   *agentMDNS
@@ -28,14 +28,17 @@ type broadcast struct {
 type delegate struct{}
 
 type update struct {
-	Action      string // add, del
+	Action      string // put, del
 	Data        map[string]string
 	Persistence bool
 }
 
 func init() {
+	dbpath := flag.String("dbpath", "./db", "db path")
+	flag.Parse()
 	var err error
-	db, err = leveldb.OpenFile("./db", nil)
+	db, err = leveldb.OpenFile(*dbpath, nil)
+
 	if err != nil {
 		fmt.Println("db error:", err)
 		os.Exit(0)
@@ -75,12 +78,11 @@ func (d *delegate) NotifyMsg(b []byte) {
 		for _, u := range updates {
 			for k, v := range u.Data {
 				switch u.Action {
-				case "add":
+				case "put":
 					db.Put([]byte(k), []byte(v), nil)
 				case "del":
 					db.Delete([]byte(k), nil)
 				}
-
 			}
 		}
 

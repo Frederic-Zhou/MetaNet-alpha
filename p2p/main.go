@@ -13,7 +13,7 @@ func main() {
 		fmt.Println(err)
 	}
 
-	http.HandleFunc("/add", addHandler)
+	http.HandleFunc("/put", putHandler)
 	http.HandleFunc("/del", delHandler)
 	http.HandleFunc("/get", getHandler)
 	http.HandleFunc("/join", joinHandler)
