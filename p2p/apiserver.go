@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"net/http"
 )
 
@@ -12,7 +13,7 @@ func addHandler(w http.ResponseWriter, r *http.Request) {
 	key := r.Form.Get("key")
 	val := r.Form.Get("val")
 	mtx.Lock()
-	items[key] = val
+	db.Put([]byte(key), []byte(val), nil)
 	mtx.Unlock()
 
 	b, err := json.Marshal([]*update{
@@ -41,7 +42,7 @@ func delHandler(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	key := r.Form.Get("key")
 	mtx.Lock()
-	delete(items, key)
+	db.Delete([]byte(key), nil)
 	mtx.Unlock()
 
 	b, err := json.Marshal([]*update{{
@@ -68,9 +69,30 @@ func getHandler(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	key := r.Form.Get("key")
 	mtx.RLock()
-	val := items[key]
+	// val := items[key]
+	val, err := db.Get([]byte(key), nil)
+	if err != nil {
+		fmt.Println("get value error:", err)
+	}
 	mtx.RUnlock()
 	w.Write([]byte(val))
+}
+
+func kv(w http.ResponseWriter, r *http.Request) {
+	mtx.RLock()
+	m := map[string]string{}
+	iter := db.NewIterator(nil, nil)
+	for iter.Next() {
+		m[string(iter.Key())] = string(iter.Value())
+	}
+	iter.Release()
+
+	if err := iter.Error(); err != nil {
+		fmt.Println("get state error:", err)
+	}
+	mtx.RUnlock()
+	b, _ := json.Marshal(m)
+	w.Write(b)
 }
 
 func joinHandler(w http.ResponseWriter, r *http.Request) {
@@ -94,7 +116,6 @@ func infoHandler(w http.ResponseWriter, r *http.Request) {
 		"health_score": memberList.GetHealthScore(),
 		"members":      memberList.Members(),
 		"mdns":         *mdnsInfo,
-		"kv":           items,
 	})
 	if err != nil {
 		w.Write([]byte(err.Error()))
@@ -102,4 +123,13 @@ func infoHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Write(info)
 
+}
+
+func dashboard(w http.ResponseWriter, r *http.Request) {
+	t, err := template.ParseFiles("./dashboard.html")
+	if err != nil {
+		panic(err)
+	}
+
+	t.Execute(w, nil)
 }

@@ -8,14 +8,16 @@ import (
 
 	"github.com/hashicorp/memberlist"
 	"github.com/pborman/uuid"
+	"github.com/syndtr/goleveldb/leveldb"
 )
 
 var (
-	mtx        sync.RWMutex
-	items      = map[string]string{} //存储，此处需要修改为持久性存储
+	mtx sync.RWMutex
+	// items      = map[string]string{} //存储，此处需要修改为持久性存储
 	broadcasts *memberlist.TransmitLimitedQueue
 	memberList *memberlist.Memberlist
 	mdnsInfo   *agentMDNS
+	db         *leveldb.DB
 )
 
 type broadcast struct {
@@ -26,8 +28,18 @@ type broadcast struct {
 type delegate struct{}
 
 type update struct {
-	Action string // add, del
-	Data   map[string]string
+	Action      string // add, del
+	Data        map[string]string
+	Persistence bool
+}
+
+func init() {
+	var err error
+	db, err = leveldb.OpenFile("./db", nil)
+	if err != nil {
+		fmt.Println("db error:", err)
+		os.Exit(0)
+	}
 }
 
 func (b *broadcast) Invalidates(other memberlist.Broadcast) bool {
@@ -64,12 +76,14 @@ func (d *delegate) NotifyMsg(b []byte) {
 			for k, v := range u.Data {
 				switch u.Action {
 				case "add":
-					items[k] = v
+					db.Put([]byte(k), []byte(v), nil)
 				case "del":
-					delete(items, k)
+					db.Delete([]byte(k), nil)
 				}
+
 			}
 		}
+
 		mtx.Unlock()
 	}
 }
@@ -80,7 +94,16 @@ func (d *delegate) GetBroadcasts(overhead, limit int) [][]byte {
 
 func (d *delegate) LocalState(join bool) []byte {
 	mtx.RLock()
-	m := items
+	m := map[string]string{}
+	iter := db.NewIterator(nil, nil)
+	for iter.Next() {
+		m[string(iter.Key())] = string(iter.Value())
+	}
+	iter.Release()
+
+	if err := iter.Error(); err != nil {
+		fmt.Println("get state error:", err)
+	}
 	mtx.RUnlock()
 	b, _ := json.Marshal(m)
 	return b
@@ -99,7 +122,7 @@ func (d *delegate) MergeRemoteState(buf []byte, join bool) {
 	}
 	mtx.Lock()
 	for k, v := range m {
-		items[k] = v
+		db.Put([]byte(k), []byte(v), nil)
 	}
 	mtx.Unlock()
 }
