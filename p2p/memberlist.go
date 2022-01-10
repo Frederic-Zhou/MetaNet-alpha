@@ -2,10 +2,8 @@ package main
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
 	"os"
-	"strings"
 	"sync"
 
 	"github.com/hashicorp/memberlist"
@@ -14,11 +12,10 @@ import (
 
 var (
 	mtx        sync.RWMutex
-	members    = flag.String("members", "", "comma seperated list of members")
-	port       = flag.Int("port", 8800, "http port")
 	items      = map[string]string{} //存储，此处需要修改为持久性存储
 	broadcasts *memberlist.TransmitLimitedQueue
 	memberList *memberlist.Memberlist
+	mdnsInfo   *agentMDNS
 )
 
 type broadcast struct {
@@ -31,10 +28,6 @@ type delegate struct{}
 type update struct {
 	Action string // add, del
 	Data   map[string]string
-}
-
-func init() {
-	flag.Parse()
 }
 
 func (b *broadcast) Invalidates(other memberlist.Broadcast) bool {
@@ -125,7 +118,7 @@ func (ed *eventDelegate) NotifyUpdate(node *memberlist.Node) {
 	fmt.Println("A node was updated: " + node.String())
 }
 
-func Start() error {
+func Start(members []string) error {
 	hostname, _ := os.Hostname()
 	c := memberlist.DefaultLocalConfig()
 	c.Events = &eventDelegate{}
@@ -137,9 +130,8 @@ func Start() error {
 	if err != nil {
 		return err
 	}
-	if len(*members) > 0 {
-		parts := strings.Split(*members, ",")
-		_, err := memberList.Join(parts)
+	if len(members) > 0 {
+		_, err := memberList.Join(members)
 		if err != nil {
 			return err
 		}
@@ -153,8 +145,10 @@ func Start() error {
 	node := memberList.LocalNode()
 	fmt.Printf("Local member %s:%d\n", node.Addr, node.Port)
 
-	angetMDNS, err := NewAgentMDNS(memberList, os.Stdout, false, c.Name, "metanet", nil, node.Addr, node.Port+1)
-	fmt.Println(angetMDNS, err)
+	mdnsInfo, err = stratMDNS(os.Stdout, c.Name, "metanet", nil, node.Addr, node.Port)
+	if err != nil {
+		fmt.Println(err)
+	}
 
 	return nil
 }

@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/hashicorp/mdns"
-	"github.com/hashicorp/memberlist"
 )
 
 const (
@@ -19,16 +18,16 @@ const (
 // AgentMDNS is used to advertise ourself using mDNS and to
 // attempt to join peers periodically using mDNS queries.
 type agentMDNS struct {
-	discover string
+	Discover string
 	logger   *log.Logger
-	seen     map[string]struct{}
-	server   *mdns.Server
+	Seen     map[string]struct{}
+	Server   *mdns.Server
 	// replay   bool
 	iface *net.Interface
 }
 
 // NewAgentMDNS is used to create a new AgentMDNS
-func NewAgentMDNS(agent *memberlist.Memberlist, logOutput io.Writer, replay bool,
+func stratMDNS(logOutput io.Writer,
 	node, discover string, iface *net.Interface,
 	bind net.IP, port uint16) (*agentMDNS, error) {
 	// Create the service
@@ -58,10 +57,10 @@ func NewAgentMDNS(agent *memberlist.Memberlist, logOutput io.Writer, replay bool
 
 	// Initialize the AgentMDNS
 	m := &agentMDNS{
-		discover: discover,
+		Discover: discover,
 		logger:   log.New(logOutput, "", log.LstdFlags),
-		seen:     make(map[string]struct{}),
-		server:   server,
+		Seen:     make(map[string]struct{}),
+		Server:   server,
 		// replay:   replay,
 		iface: iface,
 	}
@@ -86,7 +85,7 @@ func (m *agentMDNS) run() {
 			addrS := addr.String()
 
 			// Skip if we've handled this host already
-			if _, ok := m.seen[addrS]; ok {
+			if _, ok := m.Seen[addrS]; ok {
 				continue
 			}
 
@@ -106,7 +105,7 @@ func (m *agentMDNS) run() {
 
 			// Mark all as seen
 			for _, n := range join {
-				m.seen[n] = struct{}{}
+				m.Seen[n] = struct{}{}
 			}
 			join = nil
 
@@ -120,9 +119,10 @@ func (m *agentMDNS) run() {
 // poll is invoked periodically to check for new hosts
 func (m *agentMDNS) poll(hosts chan *mdns.ServiceEntry) {
 	params := mdns.QueryParam{
-		Service:   mdnsName(m.discover),
-		Interface: m.iface,
-		Entries:   hosts,
+		Service:     mdnsName(m.Discover),
+		Interface:   m.iface,
+		Entries:     hosts,
+		DisableIPv6: true,
 	}
 
 	if err := mdns.Query(&params); err != nil {
