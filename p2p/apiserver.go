@@ -137,7 +137,7 @@ func infoHandler(w http.ResponseWriter, r *http.Request) {
 
 func start(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-
+	members := []string{}
 	localName := r.Form.Get("local_name")
 	clusterName := r.Form.Get("cluster_name")
 	portStr := r.Form.Get("port")
@@ -149,10 +149,13 @@ func start(w http.ResponseWriter, r *http.Request) {
 	if clusterName == "" {
 		clusterName = "mycluster"
 	}
+	if member != "" {
+		members = append(members, member)
+	}
 
 	port, _ := strconv.Atoi(portStr)
 
-	if err := Start(localName, clusterName, port, []string{member}); err != nil {
+	if err := Start(localName, clusterName, port, members); err != nil {
 		http.Error(w, err.Error(), 500)
 		return
 	}

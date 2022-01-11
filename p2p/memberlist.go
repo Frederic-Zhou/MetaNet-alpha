@@ -144,11 +144,14 @@ func Start(localName, clusterName string, port int, members []string) error {
 	var err error
 	memberList, err = memberlist.Create(c)
 	if err != nil {
+		fmt.Println("create err", err)
 		return err
 	}
+
 	if len(members) > 0 {
 		_, err := memberList.Join(members)
 		if err != nil {
+			fmt.Println("join err", err, members, len(members))
 			return err
 		}
 	}
@@ -164,6 +167,7 @@ func Start(localName, clusterName string, port int, members []string) error {
 	mdnsInfo, err = stratMDNS(os.Stdout, c.Name, clusterName, nil, node.Addr, node.Port)
 	if err != nil {
 		fmt.Println(err)
+		return err
 	}
 
 	return nil
