@@ -9,9 +9,15 @@ import (
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
+var (
+	username string
+	password string
+)
+
 func main() {
 	port := flag.Int("port", 8800, "http port")
 	dbpath := flag.String("dbpath", "./db", "db path")
+
 	flag.Parse()
 	var err error
 	db, err = leveldb.OpenFile(*dbpath, nil)
@@ -31,6 +37,7 @@ func main() {
 	http.HandleFunc("/info", infoHandler)
 	http.HandleFunc("/kv", kv)
 	http.HandleFunc("/", dashboard)
+	// http.HandleFunc("/", basicAuth(dashboard))
 	http.HandleFunc("/start", start)
 	http.HandleFunc("/stop", stop)
 
