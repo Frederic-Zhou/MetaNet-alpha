@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"os"
+	"strconv"
 )
 
 func putHandler(w http.ResponseWriter, r *http.Request) {
@@ -71,10 +73,13 @@ func getHandler(w http.ResponseWriter, r *http.Request) {
 	mtx.RLock()
 	// val := items[key]
 	val, err := db.Get([]byte(key), nil)
-	if err != nil {
-		fmt.Println("get value error:", err)
-	}
 	mtx.RUnlock()
+
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+
 	w.Write([]byte(val))
 }
 
@@ -86,11 +91,13 @@ func kv(w http.ResponseWriter, r *http.Request) {
 		m[string(iter.Key())] = string(iter.Value())
 	}
 	iter.Release()
+	mtx.RUnlock()
 
 	if err := iter.Error(); err != nil {
-		fmt.Println("get state error:", err)
+		http.Error(w, err.Error(), 500)
+		return
 	}
-	mtx.RUnlock()
+
 	b, _ := json.Marshal(m)
 	w.Write(b)
 }
@@ -103,7 +110,8 @@ func joinHandler(w http.ResponseWriter, r *http.Request) {
 	i, err := memberList.Join([]string{member})
 
 	if err != nil {
-		w.Write([]byte(err.Error()))
+		http.Error(w, err.Error(), 500)
+		return
 	}
 
 	w.Write([]byte(fmt.Sprintf("%d", i)))
@@ -111,22 +119,62 @@ func joinHandler(w http.ResponseWriter, r *http.Request) {
 
 func infoHandler(w http.ResponseWriter, r *http.Request) {
 
-	fmt.Println(mdnsInfo)
 	info, err := json.Marshal(map[string]interface{}{
 		"health_score": memberList.GetHealthScore(),
 		"members":      memberList.Members(),
 		"mdns":         *mdnsInfo,
 	})
 	if err != nil {
-		w.Write([]byte(err.Error()))
+		http.Error(w, err.Error(), 500)
+		return
 	}
 
 	w.Write(info)
 
 }
 
+func start(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+
+	localName := r.Form.Get("local_name")
+	clusterName := r.Form.Get("cluster_name")
+	portStr := r.Form.Get("port")
+	member := r.Form.Get("member")
+
+	if localName == "" {
+		localName, _ = os.Hostname()
+	}
+	if clusterName == "" {
+		clusterName = "mycluster"
+	}
+
+	port, _ := strconv.Atoi(portStr)
+
+	if err := Start(localName, clusterName, port, []string{member}); err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	w.Write([]byte("success"))
+}
+
+func stop(w http.ResponseWriter, r *http.Request) {
+
+	err := mdnsInfo.Server.Shutdown()
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	err = memberList.Shutdown()
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+
+	w.Write([]byte("success"))
+}
+
 func dashboard(w http.ResponseWriter, r *http.Request) {
-	t, err := template.ParseFiles("./dashboard.html")
+	t, err := template.ParseFiles("./web/dashboard.html")
 	if err != nil {
 		panic(err)
 	}

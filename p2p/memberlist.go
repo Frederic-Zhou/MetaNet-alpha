@@ -2,13 +2,11 @@ package main
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
 	"os"
 	"sync"
 
 	"github.com/hashicorp/memberlist"
-	"github.com/pborman/uuid"
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
@@ -34,15 +32,7 @@ type update struct {
 }
 
 func init() {
-	dbpath := flag.String("dbpath", "./db", "db path")
-	flag.Parse()
-	var err error
-	db, err = leveldb.OpenFile(*dbpath, nil)
 
-	if err != nil {
-		fmt.Println("db error:", err)
-		os.Exit(0)
-	}
 }
 
 func (b *broadcast) Invalidates(other memberlist.Broadcast) bool {
@@ -143,13 +133,14 @@ func (ed *eventDelegate) NotifyUpdate(node *memberlist.Node) {
 	fmt.Println("A node was updated: " + node.String())
 }
 
-func Start(members []string) error {
-	hostname, _ := os.Hostname()
+func Start(localName, clusterName string, port int, members []string) error {
+
 	c := memberlist.DefaultLocalConfig()
 	c.Events = &eventDelegate{}
 	c.Delegate = &delegate{}
-	c.BindPort = 0
-	c.Name = hostname + "-" + uuid.NewUUID().String()
+	c.BindPort = port
+	c.Name = localName
+
 	var err error
 	memberList, err = memberlist.Create(c)
 	if err != nil {
@@ -170,7 +161,7 @@ func Start(members []string) error {
 	node := memberList.LocalNode()
 	fmt.Printf("Local member %s:%d\n", node.Addr, node.Port)
 
-	mdnsInfo, err = stratMDNS(os.Stdout, c.Name, "metanet", nil, node.Addr, node.Port)
+	mdnsInfo, err = stratMDNS(os.Stdout, c.Name, clusterName, nil, node.Addr, node.Port)
 	if err != nil {
 		fmt.Println(err)
 	}
