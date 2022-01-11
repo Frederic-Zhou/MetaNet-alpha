@@ -46,6 +46,7 @@
 						<div class="layui-form-mid layui-word-aux"></div>
 					</div>
 				</div>
+				<pre class="layui-code" lay-skin="notepad"></pre>
 			</form>
 		</td>
 	</tr>
@@ -59,6 +60,7 @@
 					</div>
 					<div class="layui-form-mid layui-word-aux"></div>
 				</div>
+				<pre class="layui-code" lay-skin="notepad"></pre>
 			</form>
 		</td>
 	</tr>
@@ -89,6 +91,7 @@
 						</div>
 					</div>
 				</div>
+				<pre class="layui-code" lay-skin="notepad"></pre>
 			</form>
 			<form action="/stop" class="layui-form">
 				<div class="layui-form-item">
@@ -97,6 +100,7 @@
 					</div>
 					<div class="layui-form-mid layui-word-aux"></div>
 				</div>
+				<pre class="layui-code" lay-skin="notepad"></pre>
 			</form>
 		</td>
 	</tr>
@@ -121,6 +125,7 @@
 					</div>
 				</div>
 			</form>
+			<pre class="layui-code" lay-skin="notepad"></pre>
 		</td>
 	</tr>
 	<tr>
@@ -144,6 +149,7 @@
 					</div>
 				</div>
 			</form>
+			<pre class="layui-code" lay-skin="notepad"></pre>
 		</td>
 	</tr>
 	<tr>
@@ -161,6 +167,7 @@
 					</div>
 				</div>
 			</form>
+			<pre class="layui-code" lay-skin="notepad"></pre>
 		</td>
 	</tr>
 	<tr>
@@ -174,6 +181,7 @@
 					</div>
 				</div>
 			</form>
+			<pre class="layui-code" lay-skin="notepad"></pre>
 		</td>
 	</tr>
 </table>
@@ -194,15 +202,19 @@ layui.use(function(){
 		var data=zs.serialize();
 		if(method=='GET'){
 			$.get(act_url+'?'+data,function(res){
-				console.log(res);
+				//console.log(res);
+				zs.next('.layui-code').html(res)
 			});
 		}else{
 			$.post(act_url,data,function(res){
-				console.log(res);
+				//console.log(res);
+				zs.next('.layui-code').html(res)
 			});
 		}
 		
 	})
+
+	//layui.code({'title':'查询结果',height:350});
 });
 </script>
 
