@@ -116,7 +116,7 @@ func joinHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Write([]byte(fmt.Sprintf("%d", i)))
+	w.Write([]byte(fmt.Sprintf("join success: %d", i)))
 }
 
 func infoHandler(w http.ResponseWriter, r *http.Request) {
@@ -156,7 +156,7 @@ func start(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), 500)
 		return
 	}
-	w.Write([]byte("success"))
+	w.Write([]byte("start success"))
 }
 
 func stop(w http.ResponseWriter, r *http.Request) {
@@ -172,7 +172,7 @@ func stop(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Write([]byte("success"))
+	w.Write([]byte("stop success"))
 }
 
 func dashboard(w http.ResponseWriter, r *http.Request) {
