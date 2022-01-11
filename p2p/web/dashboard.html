@@ -1,1 +1,210 @@
-Hello2
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="renderer" content="webkit">
+<title>MetaNET</title>
+<link rel="stylesheet" href="asset/js/layui/css/layui.css" media="all">
+<link rel="stylesheet" href="asset/css/layuimini.css" media="all">
+<link rel="stylesheet" href="asset/css/themes/default.css" media="all">
+<link rel="stylesheet" href="asset/css/fonta/css/font-awesome.min.css" media="all">
+<link rel="stylesheet" href="asset/css/common.css" media="all">
+
+<style type="text/css">
+.layui-layout-admin .layui-body{padding-bottom:0}
+</style>
+</head>
+
+<body>
+
+
+<div class="layuimini-container">
+	<div class="layuimini-main">
+
+
+
+
+
+<blockquote class="layui-elem-quote">服务器信息</blockquote>
+<table class="layui-table">
+	<tr>
+		<th width="160">join</th>
+		<td width="*">
+			<form action="/join" class="layui-form">
+				<div class="layui-form-item">
+					<div class="layui-inline">
+						<label class="layui-form-label">Host:</label>
+						<div class="layui-input-inline">
+							<input type="text" name="host" value="127.0.0.1" placeholder="exp: 192.168.3.3:12345" class="layui-input" lay-verify="required">
+						</div>
+						<div class="layui-form-mid layui-word-aux">192.168.3.3:12345</div>
+						<div class="layui-inline">
+							<button type="submit" class="layui-btn" lay-submit>加入</button>
+						</div>
+						<div class="layui-form-mid layui-word-aux"></div>
+					</div>
+				</div>
+			</form>
+		</td>
+	</tr>
+	<tr>
+		<th>info</th>
+		<td>
+			<form action="/info" method="GET" class="layui-form">
+				<div class="layui-form-item">
+					<div class="layui-inline">
+						<button type="submit" class="layui-btn" lay-submit>刷新info</button>
+					</div>
+					<div class="layui-form-mid layui-word-aux"></div>
+				</div>
+			</form>
+		</td>
+	</tr>
+	<tr>
+		<th>开启/停止</th>
+		<td>
+			<form action="/start" class="layui-form">
+				<div class="layui-form-item">
+					<div class="layui-inline">
+						<label class="layui-form-label">local_name:</label>
+						<div class="layui-input-inline">
+							<input type="text" name="local_name" value="" class="layui-input">
+						</div>
+						<label class="layui-form-label">cluster_name:</label>
+						<div class="layui-input-inline">
+							<input type="text" name="cluster_name" value="" class="layui-input">
+						</div>
+						<label class="layui-form-label">port:</label>
+						<div class="layui-input-inline">
+							<input type="text" name="port" value="" class="layui-input">
+						</div>
+						<label class="layui-form-label">member:</label>
+						<div class="layui-input-inline">
+							<input type="text" name="member" value="" class="layui-input">
+						</div>
+						<div class="layui-input-inline">
+							<button type="submit" class="layui-btn" lay-submit>启动</button>
+						</div>
+					</div>
+				</div>
+			</form>
+			<form action="/stop" class="layui-form">
+				<div class="layui-form-item">
+					<div class="layui-inline">
+						<button type="submit" class="layui-btn layui-btn-primary layui-border-green" lay-submit>停止</button>
+					</div>
+					<div class="layui-form-mid layui-word-aux"></div>
+				</div>
+			</form>
+		</td>
+	</tr>
+</table>
+
+<blockquote class="layui-elem-quote">KV操作</blockquote>
+<table class="layui-table">
+	<tr>
+		<th width="160">get</th>
+		<td width="*">
+			<form action="/get" class="layui-form">
+				<div class="layui-form-item">
+					<div class="layui-inline">
+						<label class="layui-form-label">key:</label>
+						<div class="layui-input-inline">
+							<input type="text" name="key" value="" class="layui-input" lay-verify="required">
+						</div>
+						<div class="layui-inline">
+							<button type="submit" class="layui-btn" lay-submit>查询</button>
+						</div>
+						<div class="layui-form-mid layui-word-aux"></div>
+					</div>
+				</div>
+			</form>
+		</td>
+	</tr>
+	<tr>
+		<th>put</th>
+		<td>
+			<form action="/put" class="layui-form">
+				<div class="layui-form-item">
+					<div class="layui-inline">
+						<label class="layui-form-label">key:</label>
+						<div class="layui-input-inline">
+							<input type="text" name="key" value="" class="layui-input" lay-verify="required">
+						</div>
+						<label class="layui-form-label">val:</label>
+						<div class="layui-input-inline">
+							<input type="text" name="val" value="" class="layui-input" lay-verify="required">
+						</div>
+						
+						<button type="submit" class="layui-btn" lay-submit>写入数据</button>
+						
+						<div class="layui-form-mid layui-word-aux"></div>
+					</div>
+				</div>
+			</form>
+		</td>
+	</tr>
+	<tr>
+		<th>del</th>
+		<td>
+			<form action="/del" class="layui-form">
+				<div class="layui-form-item">
+					<div class="layui-inline">
+						<label class="layui-form-label">key:</label>
+						<div class="layui-input-inline">
+							<input type="text" name="key" value="" class="layui-input" lay-verify="required">
+						</div>
+						<button type="submit" class="layui-btn" lay-submit>删除</button>
+						<div class="layui-form-mid layui-word-aux"></div>
+					</div>
+				</div>
+			</form>
+		</td>
+	</tr>
+	<tr>
+		<th>kv</th>
+		<td>
+			<form action="/kv" class="layui-form">
+				<div class="layui-form-item">
+					<div class="layui-inline">
+						<button type="submit" class="layui-btn" lay-submit>查看全部</button>
+						<div class="layui-form-mid layui-word-aux"></div>
+					</div>
+				</div>
+			</form>
+		</td>
+	</tr>
+</table>
+
+
+
+<script type="text/javascript" src="asset/js/jquery.min.js"></script>
+<script type="text/javascript" src="asset/js/layui/layui.js"></script>
+<script type="text/javascript" src="asset/js/lay-config.js"></script>
+<script type="text/javascript" src="asset/js/fn.js"></script>
+<script type="text/javascript">
+layui.use(function(){
+	$('.layui-form').on('submit',function(e){
+		e.preventDefault();
+		var zs=$(this);
+		var act_url=zs.attr('action');
+		var method=zs.attr('method');
+		var data=zs.serialize();
+		if(method=='GET'){
+			$.get(act_url+'?'+data,function(res){
+				console.log(res);
+			});
+		}else{
+			$.post(act_url,data,function(res){
+				console.log(res);
+			});
+		}
+		
+	})
+});
+</script>
+
+</body>
+</body>
