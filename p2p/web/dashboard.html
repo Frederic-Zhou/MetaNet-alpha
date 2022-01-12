@@ -46,8 +46,8 @@
 						<div class="layui-form-mid layui-word-aux"></div>
 					</div>
 				</div>
-				<pre class="layui-code" lay-skin="notepad"></pre>
 			</form>
+			<pre class="layui-code" lay-skin="notepad"></pre>
 		</td>
 	</tr>
 	<tr>
@@ -60,8 +60,8 @@
 					</div>
 					<div class="layui-form-mid layui-word-aux"></div>
 				</div>
-				<pre class="layui-code" lay-skin="notepad"></pre>
 			</form>
+			<pre class="layui-code" lay-skin="notepad"></pre>
 		</td>
 	</tr>
 	<tr>
@@ -91,8 +91,8 @@
 						</div>
 					</div>
 				</div>
-				<pre class="layui-code" lay-skin="notepad"></pre>
 			</form>
+			<pre class="layui-code" lay-skin="notepad"></pre>
 			<form action="/stop" class="layui-form">
 				<div class="layui-form-item">
 					<div class="layui-inline">
@@ -100,8 +100,40 @@
 					</div>
 					<div class="layui-form-mid layui-word-aux"></div>
 				</div>
-				<pre class="layui-code" lay-skin="notepad"></pre>
 			</form>
+			<pre class="layui-code" lay-skin="notepad"></pre>
+		</td>
+	</tr>
+
+	<tr>
+		<th>发送sendto</th>
+		<td>
+			<form action="/sendto" class="layui-form">
+				<div class="layui-form-item">
+					<div class="layui-inline">
+						<label class="layui-form-label">to_ip:</label>
+						<div class="layui-input-inline">
+							<input type="text" name="to_ip" value="" placeholder="eg:127.0.0.1:9999" class="layui-input">
+						</div>
+						<label class="layui-form-label">to_name:</label>
+						<div class="layui-input-inline">
+							<input type="text" name="to_name" value="" class="layui-input">
+						</div>
+						<label class="layui-form-label">key:</label>
+						<div class="layui-input-inline">
+							<input type="text" name="key" value="" class="layui-input">
+						</div>
+						<label class="layui-form-label">val:</label>
+						<div class="layui-input-inline">
+							<input type="text" name="val" value="" class="layui-input">
+						</div>
+						<div class="layui-input-inline">
+							<button type="submit" class="layui-btn" lay-submit>发送</button>
+						</div>
+					</div>
+				</div>
+			</form>
+			<pre class="layui-code" lay-skin="notepad"></pre>
 		</td>
 	</tr>
 </table>
@@ -193,6 +225,11 @@
 <script type="text/javascript" src="asset/js/lay-config.js"></script>
 <script type="text/javascript" src="asset/js/fn.js"></script>
 <script type="text/javascript">
+$.ajaxSetup({
+	error:function(xmlreq,txt,err){
+		layer.alert(xmlreq['responseText'],{icon:2})
+	}
+})
 layui.use(function(){
 	$('.layui-form').on('submit',function(e){
 		e.preventDefault();
