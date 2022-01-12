@@ -33,6 +33,7 @@ func main() {
 	http.HandleFunc("/put", putHandler)
 	http.HandleFunc("/del", delHandler)
 	http.HandleFunc("/get", getHandler)
+	http.HandleFunc("/sendto", sendtoHandler)
 	http.HandleFunc("/join", joinHandler)
 	http.HandleFunc("/info", infoHandler)
 	http.HandleFunc("/kv", kv)

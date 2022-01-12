@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+
+	"github.com/hashicorp/memberlist"
 )
 
 func putHandler(w http.ResponseWriter, r *http.Request) {
@@ -107,6 +109,39 @@ func kv(w http.ResponseWriter, r *http.Request) {
 
 	b, _ := json.Marshal(m)
 	w.Write(b)
+}
+
+func sendtoHandler(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	toIP := r.Form.Get("to_ip")
+	toName := r.Form.Get("to_name")
+	key := r.Form.Get("key")
+	val := r.Form.Get("val")
+
+	mtx.Lock() //============lock
+	lc.Increment()
+	data := fmt.Sprintf("%s,%d", val, lc.Time())
+	db.Put([]byte(key), []byte(data), nil)
+	b, err := json.Marshal([]*update{
+		{
+			Action: "put",
+			Data: map[string]string{
+				key: val,
+			},
+			Lt: lc.Time(),
+		},
+	})
+	mtx.Unlock() //============unlock
+
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+
+	toAddr := memberlist.Address{Addr: toIP, Name: toName}
+	memberList.SendToAddress(toAddr, append([]byte("d"), b...))
+
+	w.Write([]byte("send success"))
 }
 
 func joinHandler(w http.ResponseWriter, r *http.Request) {
