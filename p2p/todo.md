@@ -26,6 +26,11 @@
 - /get 查看数据
   - key
   - 返回 文本
+- /sendto
+  - to_ip  IP:port
+  - to_name 节点名称
+  - key 键
+  - val 值
 - /kv 查看全部数据
   - 返回 列表json
 - /join 加入节点

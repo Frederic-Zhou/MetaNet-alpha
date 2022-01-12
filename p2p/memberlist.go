@@ -75,9 +75,9 @@ func (d *delegate) NotifyMsg(b []byte) {
 				switch u.Action {
 				case "put":
 					data := fmt.Sprintf("%s,%d", v, lc.Time())
-					db.Put([]byte(k), []byte(data), nil)
+					_ = db.Put([]byte(k), []byte(data), nil)
 				case "del":
-					db.Delete([]byte(k), nil)
+					_ = db.Delete([]byte(k), nil)
 				}
 			}
 		}
@@ -121,7 +121,7 @@ func (d *delegate) MergeRemoteState(buf []byte, join bool) {
 	mtx.Lock()
 
 	for k, v := range m {
-		db.Put([]byte(k), []byte(v), nil)
+		_ = db.Put([]byte(k), []byte(v), nil)
 
 		i := bytes.LastIndex([]byte(v), []byte(","))
 		t, _ := strconv.ParseUint(string(v[i+1:]), 10, 64)

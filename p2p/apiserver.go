@@ -20,9 +20,8 @@ func putHandler(w http.ResponseWriter, r *http.Request) {
 	val := r.Form.Get("val")
 
 	mtx.Lock() //============lock
-	lc.Increment()
-	data := fmt.Sprintf("%s,%d", val, lc.Time())
-	db.Put([]byte(key), []byte(data), nil)
+	data := fmt.Sprintf("%s,%d", val, lc.Increment())
+	_ = db.Put([]byte(key), []byte(data), nil)
 	b, err := json.Marshal([]*update{
 		{
 			Action: "put",
@@ -52,15 +51,14 @@ func delHandler(w http.ResponseWriter, r *http.Request) {
 	key := r.Form.Get("key")
 
 	mtx.Lock() //============lock
-	lc.Increment()
-	db.Delete([]byte(key), nil)
+	_ = db.Delete([]byte(key), nil)
 
 	b, err := json.Marshal([]*update{{
 		Action: "del",
 		Data: map[string]string{
 			key: "",
 		},
-		Lt: lc.Time(),
+		Lt: lc.Increment(),
 	}})
 	mtx.Unlock() //============unlock
 
@@ -119,9 +117,9 @@ func sendtoHandler(w http.ResponseWriter, r *http.Request) {
 	val := r.Form.Get("val")
 
 	mtx.Lock() //============lock
-	lc.Increment()
-	data := fmt.Sprintf("%s,%d", val, lc.Time())
-	db.Put([]byte(key), []byte(data), nil)
+
+	data := fmt.Sprintf("%s,%d", val, lc.Increment())
+	_ = db.Put([]byte(key), []byte(data), nil)
 	b, err := json.Marshal([]*update{
 		{
 			Action: "put",
@@ -139,8 +137,11 @@ func sendtoHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	toAddr := memberlist.Address{Addr: toIP, Name: toName}
-	memberList.SendToAddress(toAddr, append([]byte("d"), b...))
-
+	err = memberList.SendToAddress(toAddr, append([]byte("d"), b...))
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
 	w.Write([]byte("send success"))
 }
 
