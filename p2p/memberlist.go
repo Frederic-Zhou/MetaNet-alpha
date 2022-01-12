@@ -1,9 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 	"sync"
 
 	"github.com/hashicorp/memberlist"
@@ -16,6 +18,7 @@ var (
 	memberList *memberlist.Memberlist
 	mdnsInfo   *agentMDNS
 	db         *leveldb.DB
+	lc         = LamportClock{counter: 0}
 )
 
 type broadcast struct {
@@ -29,6 +32,7 @@ type update struct {
 	Action      string // put, del
 	Data        map[string]string
 	Persistence bool
+	Lt          LamportTime
 }
 
 func init() {
@@ -66,10 +70,12 @@ func (d *delegate) NotifyMsg(b []byte) {
 		}
 		mtx.Lock()
 		for _, u := range updates {
+			lc.Witness(u.Lt)
 			for k, v := range u.Data {
 				switch u.Action {
 				case "put":
-					db.Put([]byte(k), []byte(v), nil)
+					data := fmt.Sprintf("%s,%d", v, lc.Time())
+					db.Put([]byte(k), []byte(data), nil)
 				case "del":
 					db.Delete([]byte(k), nil)
 				}
@@ -113,9 +119,15 @@ func (d *delegate) MergeRemoteState(buf []byte, join bool) {
 		return
 	}
 	mtx.Lock()
+
 	for k, v := range m {
 		db.Put([]byte(k), []byte(v), nil)
+
+		i := bytes.LastIndex([]byte(v), []byte(","))
+		t, _ := strconv.ParseUint(string(v[i+1:]), 10, 64)
+		lc.Witness(LamportTime(t) - 1)
 	}
+
 	mtx.Unlock()
 }
 
@@ -166,7 +178,6 @@ func Start(localName, clusterName string, port int, members []string) error {
 
 	mdnsInfo, err = stratMDNS(os.Stdout, c.Name, clusterName, nil, node.Addr, node.Port)
 	if err != nil {
-		fmt.Println(err)
 		return err
 	}
 

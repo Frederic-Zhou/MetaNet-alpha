@@ -16,18 +16,21 @@ func putHandler(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	key := r.Form.Get("key")
 	val := r.Form.Get("val")
-	mtx.Lock()
-	db.Put([]byte(key), []byte(val), nil)
-	mtx.Unlock()
 
+	mtx.Lock() //============lock
+	lc.Increment()
+	data := fmt.Sprintf("%s,%d", val, lc.Time())
+	db.Put([]byte(key), []byte(data), nil)
 	b, err := json.Marshal([]*update{
 		{
 			Action: "put",
 			Data: map[string]string{
 				key: val,
 			},
+			Lt: lc.Time(),
 		},
 	})
+	mtx.Unlock() //============unlock
 
 	if err != nil {
 		http.Error(w, err.Error(), 500)
@@ -45,16 +48,19 @@ func putHandler(w http.ResponseWriter, r *http.Request) {
 func delHandler(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	key := r.Form.Get("key")
-	mtx.Lock()
+
+	mtx.Lock() //============lock
+	lc.Increment()
 	db.Delete([]byte(key), nil)
-	mtx.Unlock()
 
 	b, err := json.Marshal([]*update{{
 		Action: "del",
 		Data: map[string]string{
 			key: "",
 		},
+		Lt: lc.Time(),
 	}})
+	mtx.Unlock() //============unlock
 
 	if err != nil {
 		http.Error(w, err.Error(), 500)
@@ -72,10 +78,9 @@ func delHandler(w http.ResponseWriter, r *http.Request) {
 func getHandler(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	key := r.Form.Get("key")
-	mtx.RLock()
-	// val := items[key]
+	mtx.RLock() //============lock
 	val, err := db.Get([]byte(key), nil)
-	mtx.RUnlock()
+	mtx.RUnlock() //============unlock
 
 	if err != nil {
 		http.Error(w, err.Error(), 500)
@@ -86,14 +91,14 @@ func getHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func kv(w http.ResponseWriter, r *http.Request) {
-	mtx.RLock()
+	mtx.RLock() //============lock
 	m := map[string]string{}
 	iter := db.NewIterator(nil, nil)
 	for iter.Next() {
 		m[string(iter.Key())] = string(iter.Value())
 	}
 	iter.Release()
-	mtx.RUnlock()
+	mtx.RUnlock() //============unlock
 
 	if err := iter.Error(); err != nil {
 		http.Error(w, err.Error(), 500)
