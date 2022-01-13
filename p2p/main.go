@@ -41,6 +41,7 @@ func main() {
 	// http.HandleFunc("/", basicAuth(dashboard))
 	http.HandleFunc("/start", start)
 	http.HandleFunc("/stop", stop)
+	http.HandleFunc("/errorlog", errorlog)
 
 	fmt.Printf("Listening on :%d\n", *port)
 	if err := http.ListenAndServe(fmt.Sprintf(":%d", *port), nil); err != nil {

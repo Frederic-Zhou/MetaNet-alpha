@@ -20,15 +20,15 @@ func putHandler(w http.ResponseWriter, r *http.Request) {
 	val := r.Form.Get("val")
 
 	mtx.Lock() //============lock
-	data := fmt.Sprintf("%s,%d", val, lc.Increment())
-	_ = db.Put([]byte(key), []byte(data), nil)
+	// lc.Increment()
+	_ = db.Put([]byte(key), []byte(val), nil)
 	b, err := json.Marshal([]*update{
 		{
 			Action: "put",
 			Data: map[string]string{
 				key: val,
 			},
-			Lt: lc.Time(),
+			// Lt: lc.Time(),
 		},
 	})
 	mtx.Unlock() //============unlock
@@ -58,7 +58,7 @@ func delHandler(w http.ResponseWriter, r *http.Request) {
 		Data: map[string]string{
 			key: "",
 		},
-		Lt: lc.Increment(),
+		// Lt: lc.Increment(),
 	}})
 	mtx.Unlock() //============unlock
 
@@ -118,15 +118,15 @@ func sendtoHandler(w http.ResponseWriter, r *http.Request) {
 
 	mtx.Lock() //============lock
 
-	data := fmt.Sprintf("%s,%d", val, lc.Increment())
-	_ = db.Put([]byte(key), []byte(data), nil)
+	// lc.Increment()
+	_ = db.Put([]byte(key), []byte(val), nil)
 	b, err := json.Marshal([]*update{
 		{
 			Action: "put",
 			Data: map[string]string{
 				key: val,
 			},
-			Lt: lc.Time(),
+			// Lt: lc.Time(),
 		},
 	})
 	mtx.Unlock() //============unlock
@@ -217,6 +217,17 @@ func stop(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Write([]byte("stop success"))
+}
+
+func errorlog(w http.ResponseWriter, r *http.Request) {
+
+	errlogJson, err := json.Marshal(errlog)
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+
+	w.Write([]byte(errlogJson))
 }
 
 func dashboard(w http.ResponseWriter, r *http.Request) {

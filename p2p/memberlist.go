@@ -1,11 +1,9 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
-	"strconv"
 	"sync"
 
 	"github.com/hashicorp/memberlist"
@@ -18,7 +16,8 @@ var (
 	memberList *memberlist.Memberlist
 	mdnsInfo   *agentMDNS
 	db         *leveldb.DB
-	lc         = LamportClock{counter: 0}
+	// lc         = LamportClock{counter: 0}
+	errlog = []string{}
 )
 
 type broadcast struct {
@@ -29,10 +28,9 @@ type broadcast struct {
 type delegate struct{}
 
 type update struct {
-	Action      string // put, del
-	Data        map[string]string
-	Persistence bool
-	Lt          LamportTime
+	Action string // put, del
+	Data   map[string]string
+	// Lt     LamportTime
 }
 
 func init() {
@@ -70,19 +68,26 @@ func (d *delegate) NotifyMsg(b []byte) {
 		}
 		mtx.Lock()
 		for _, u := range updates {
-			lc.Witness(u.Lt)
+			// lc.Witness(u.Lt)
 			for k, v := range u.Data {
+				var err error
 				switch u.Action {
 				case "put":
-					data := fmt.Sprintf("%s,%d", v, lc.Time())
-					_ = db.Put([]byte(k), []byte(data), nil)
+					// data := fmt.Sprintf("%s,%d", v, lc.Time())
+					err = db.Put([]byte(k), []byte(v), nil)
 				case "del":
-					_ = db.Delete([]byte(k), nil)
+					err = db.Delete([]byte(k), nil)
+				}
+
+				if err != nil {
+					errlog = append(errlog, err.Error())
 				}
 			}
 		}
 
 		mtx.Unlock()
+	default:
+		fmt.Println("other msg:", string(b))
 	}
 }
 
@@ -121,11 +126,14 @@ func (d *delegate) MergeRemoteState(buf []byte, join bool) {
 	mtx.Lock()
 
 	for k, v := range m {
-		_ = db.Put([]byte(k), []byte(v), nil)
+		err := db.Put([]byte(k), []byte(v), nil)
+		if err != nil {
+			errlog = append(errlog, err.Error())
+		}
 
-		i := bytes.LastIndex([]byte(v), []byte(","))
-		t, _ := strconv.ParseUint(string(v[i+1:]), 10, 64)
-		lc.Witness(LamportTime(t) - 1)
+		// i := bytes.LastIndex([]byte(v), []byte(","))
+		// t, _ := strconv.ParseUint(string(v[i+1:]), 10, 64)
+		// lc.Witness(LamportTime(t) - 1)
 	}
 
 	mtx.Unlock()
