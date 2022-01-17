@@ -19,6 +19,7 @@ var (
 	db         *leveldb.DB
 	lc         = LamportClock{counter: 0}
 	errlog     = []string{}
+	localName  string
 )
 
 type ActionsType string
@@ -141,7 +142,7 @@ func (ed *eventDelegate) NotifyUpdate(node *memberlist.Node) {
 	fmt.Println("A node was updated: " + node.String())
 }
 
-func Start(localName, clusterName string, port int, members []string) error {
+func Start(clusterName string, port int, members []string) error {
 
 	c := memberlist.DefaultLocalConfig()
 	c.Events = &eventDelegate{}
@@ -171,6 +172,7 @@ func Start(localName, clusterName string, port int, members []string) error {
 	}
 	node := memberList.LocalNode()
 	fmt.Printf("Local member %s:%d\n", node.Addr, node.Port)
+	localName = c.Name
 
 	mdnsInfo, err = stratMDNS(os.Stdout, c.Name, clusterName, nil, node.Addr, node.Port)
 	if err != nil {

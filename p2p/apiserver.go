@@ -35,7 +35,7 @@ func directlineHandler(w http.ResponseWriter, r *http.Request) {
 	key := r.Form.Get("key")
 	val := r.Form.Get("val")
 
-	k := fmt.Sprintf("line_t%d_l%d", time.Now().Unix(), lc.Time())
+	k := fmt.Sprintf("line_t%d_l%d_s%s", time.Now().Unix(), lc.Time())
 	v, _ := json.Marshal([]string{key, val})
 
 	err := SendMessage(ActionsType_PUT, [][]string{{k, string(v)}})
@@ -141,7 +141,7 @@ func infoHandler(w http.ResponseWriter, r *http.Request) {
 func start(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	members := []string{}
-	localName := r.Form.Get("local_name")
+	localName = r.Form.Get("local_name")
 	clusterName := r.Form.Get("cluster_name")
 	portStr := r.Form.Get("port")
 	member := r.Form.Get("member")
@@ -158,7 +158,7 @@ func start(w http.ResponseWriter, r *http.Request) {
 
 	port, _ := strconv.Atoi(portStr)
 
-	if err := Start(localName, clusterName, port, members); err != nil {
+	if err := Start(clusterName, port, members); err != nil {
 		http.Error(w, err.Error(), 500)
 		return
 	}
