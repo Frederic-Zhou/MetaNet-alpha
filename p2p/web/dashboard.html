@@ -30,43 +30,8 @@
 <blockquote class="layui-elem-quote">服务器信息</blockquote>
 <table class="layui-table">
 	<tr>
-		<th width="160">join</th>
+		<th width="160">开启/停止</th>
 		<td width="*">
-			<form action="/join" class="layui-form">
-				<div class="layui-form-item">
-					<div class="layui-inline">
-						<label class="layui-form-label">Host:</label>
-						<div class="layui-input-inline">
-							<input type="text" name="host" value="127.0.0.1" placeholder="exp: 192.168.3.3:12345" class="layui-input" lay-verify="required">
-						</div>
-						<div class="layui-form-mid layui-word-aux">192.168.3.3:12345</div>
-						<div class="layui-inline">
-							<button type="submit" class="layui-btn" lay-submit>加入</button>
-						</div>
-						<div class="layui-form-mid layui-word-aux"></div>
-					</div>
-				</div>
-			</form>
-			<pre class="layui-code" lay-skin="notepad"></pre>
-		</td>
-	</tr>
-	<tr>
-		<th>info</th>
-		<td>
-			<form action="/info" method="GET" class="layui-form">
-				<div class="layui-form-item">
-					<div class="layui-inline">
-						<button type="submit" class="layui-btn" lay-submit>刷新info</button>
-					</div>
-					<div class="layui-form-mid layui-word-aux"></div>
-				</div>
-			</form>
-			<pre class="layui-code" lay-skin="notepad"></pre>
-		</td>
-	</tr>
-	<tr>
-		<th>开启/停止</th>
-		<td>
 			<form action="/start" class="layui-form">
 				<div class="layui-form-item">
 					<div class="layui-inline">
@@ -104,6 +69,42 @@
 			<pre class="layui-code" lay-skin="notepad"></pre>
 		</td>
 	</tr>
+	<tr>
+		<th>join</th>
+		<td>
+			<form action="/join" class="layui-form">
+				<div class="layui-form-item">
+					<div class="layui-inline">
+						<label class="layui-form-label">Host:</label>
+						<div class="layui-input-inline">
+							<input type="text" name="host" value="127.0.0.1" placeholder="exp: 192.168.3.3:12345" class="layui-input" lay-verify="required">
+						</div>
+						<div class="layui-form-mid layui-word-aux">192.168.3.3:12345</div>
+						<div class="layui-inline">
+							<button type="submit" class="layui-btn" lay-submit>加入</button>
+						</div>
+						<div class="layui-form-mid layui-word-aux"></div>
+					</div>
+				</div>
+			</form>
+			<pre class="layui-code" lay-skin="notepad"></pre>
+		</td>
+	</tr>
+	<tr>
+		<th>info</th>
+		<td>
+			<form action="/info" method="GET" class="layui-form">
+				<div class="layui-form-item">
+					<div class="layui-inline">
+						<button type="submit" class="layui-btn" lay-submit>刷新info</button>
+					</div>
+					<div class="layui-form-mid layui-word-aux"></div>
+				</div>
+			</form>
+			<pre class="layui-code" lay-skin="notepad"></pre>
+		</td>
+	</tr>
+	
 
 	<tr>
 		<th>发送sendto</th>
