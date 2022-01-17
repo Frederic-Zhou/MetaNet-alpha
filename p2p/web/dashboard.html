@@ -185,6 +185,26 @@
 		</td>
 	</tr>
 	<tr>
+		<th>line</th>
+		<td>
+			<form action="/line" class="layui-form">
+				<div class="layui-form-item">
+					<div class="layui-inline">
+						<label class="layui-form-label">val:</label>
+						<div class="layui-input-inline">
+							<input type="text" name="val" value="" class="layui-input" lay-verify="required">
+						</div>
+						
+						<button type="submit" class="layui-btn" lay-submit>写入数据</button>
+						
+						<div class="layui-form-mid layui-word-aux"></div>
+					</div>
+				</div>
+			</form>
+			<pre class="layui-code" lay-skin="notepad"></pre>
+		</td>
+	</tr>
+	<tr>
 		<th>del</th>
 		<td>
 			<form action="/del" class="layui-form">
