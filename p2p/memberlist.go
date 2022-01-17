@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 	"sync"
 
 	"github.com/hashicorp/memberlist"
@@ -73,12 +74,12 @@ func (d *delegate) NotifyMsg(b []byte) {
 			return
 		}
 		for _, u := range updates {
+			lc.Increment()
 			lc.Witness(u.Lt)
 			err := writeLocaldb(u.Action, u.Data)
 			if err != nil {
 				return
 			}
-
 		}
 
 	default:
@@ -111,21 +112,17 @@ func (d *delegate) MergeRemoteState(buf []byte, join bool) {
 		return
 	}
 
-	// for _, v := range m {
-	// 	err := db.Put([]byte(v[0]), []byte(v[1]), nil)
-	// 	if err != nil {
-	// 		errlog = append(errlog, err.Error())
-	// 	}
-
-	// 	// i := bytes.LastIndex([]byte(v), []byte(","))
-	// 	// t, _ := strconv.ParseUint(string(v[i+1:]), 10, 64)
-	// 	// lc.Witness(LamportTime(t) - 1)
-	// }
-
 	err := writeLocaldb(ActionsType_PUT, m)
 	if err != nil {
 		fmt.Println("MergeRemoteState", err)
 	}
+
+	lt, err := db.Get([]byte("__lamporttime__"), nil)
+	if err != nil {
+		os.Exit(0)
+	}
+
+	lc.counter, _ = strconv.ParseUint(string(lt), 10, 64)
 
 }
 
@@ -185,6 +182,7 @@ func Start(clusterName string, port int, members []string) error {
 
 //处理发送消息
 func SendMessage(action ActionsType, data [][]string, to ...memberlist.Address) (err error) {
+
 	err = writeLocaldb(action, data)
 	if err != nil {
 		return
@@ -223,18 +221,17 @@ func SendMessage(action ActionsType, data [][]string, to ...memberlist.Address) 
 }
 
 func writeLocaldb(action ActionsType, data [][]string) (err error) {
-	// fmt.Println("write....")
+
 	mtx.Lock()
 	defer mtx.Unlock()
-	// fmt.Println("write....1")
+	//持久化更新兰伯特时间
+	db.Put([]byte("__lamporttime__"), []byte(fmt.Sprintf("%d", lc.Time())), nil)
+
 	for _, v := range data {
-		// fmt.Println("write....2", v)
+
 		if len(v) != 2 {
 			continue
 		}
-
-		//持久化更新兰伯特时间
-		db.Put([]byte("__lamporttime__"), []byte(fmt.Sprintf("%d", lc.Time())), nil)
 
 		switch action {
 		case ActionsType_PUT:
