@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -72,29 +73,15 @@ func (d *delegate) NotifyMsg(b []byte) {
 		if err := json.Unmarshal(b[1:], &updates); err != nil {
 			return
 		}
-		mtx.Lock()
 		for _, u := range updates {
 			lc.Witness(u.Lt)
-			for k, v := range u.Data {
-				var err error
-				switch u.Action {
-				case ActionsType_PUT:
-					// data := fmt.Sprintf("%s,%d", v, lc.Time())
-					err = db.Put([]byte(v[0]), []byte(v[1]), nil)
-				case ActionsType_LINE:
-					dataByte, _ := json.Marshal(v)
-					err = db.Put([]byte(fmt.Sprintf("line_t%d_l%d_i%s", time.Now().Unix(), lc.Time(), k)), []byte(dataByte), nil)
-				case ActionsType_DEL:
-					err = db.Delete([]byte(v[1]), nil)
-				}
-
-				if err != nil {
-					errlog = append(errlog, err.Error())
-				}
+			err := writeLocaldb(u.Action, u.Data)
+			if err != nil {
+				return
 			}
+
 		}
 
-		mtx.Unlock()
 	default:
 		fmt.Println("other msg:", string(b))
 	}
@@ -105,18 +92,10 @@ func (d *delegate) GetBroadcasts(overhead, limit int) [][]byte {
 }
 
 func (d *delegate) LocalState(join bool) []byte {
-	mtx.RLock()
-	m := map[string]string{}
-	iter := db.NewIterator(nil, nil)
-	for iter.Next() {
-		m[string(iter.Key())] = string(iter.Value())
-	}
-	iter.Release()
-
-	if err := iter.Error(); err != nil {
+	m, err := readLocaldb("", 0)
+	if err != nil {
 		fmt.Println("get state error:", err)
 	}
-	mtx.RUnlock()
 	b, _ := json.Marshal(m)
 	return b
 }
@@ -128,24 +107,26 @@ func (d *delegate) MergeRemoteState(buf []byte, join bool) {
 	if !join {
 		return
 	}
-	var m map[string]string
+	m := [][]string{}
 	if err := json.Unmarshal(buf, &m); err != nil {
 		return
 	}
 	mtx.Lock()
+	defer mtx.Unlock()
 
-	for k, v := range m {
-		err := db.Put([]byte(k), []byte(v), nil)
-		if err != nil {
-			errlog = append(errlog, err.Error())
-		}
+	// for _, v := range m {
+	// 	err := db.Put([]byte(v[0]), []byte(v[1]), nil)
+	// 	if err != nil {
+	// 		errlog = append(errlog, err.Error())
+	// 	}
 
-		// i := bytes.LastIndex([]byte(v), []byte(","))
-		// t, _ := strconv.ParseUint(string(v[i+1:]), 10, 64)
-		// lc.Witness(LamportTime(t) - 1)
-	}
+	// 	// i := bytes.LastIndex([]byte(v), []byte(","))
+	// 	// t, _ := strconv.ParseUint(string(v[i+1:]), 10, 64)
+	// 	// lc.Witness(LamportTime(t) - 1)
+	// }
 
-	mtx.Unlock()
+	_ = writeLocaldb(ActionsType_PUT, m)
+
 }
 
 type eventDelegate struct{}
@@ -204,22 +185,9 @@ func Start(localName, clusterName string, port int, members []string) error {
 //处理发送消息
 func SendMessage(action ActionsType, data [][]string, to ...memberlist.Address) (err error) {
 
-	for k, v := range data {
-		switch action {
-		case ActionsType_PUT:
-			// data := fmt.Sprintf("%s,%d", v, lc.Time())
-			err = db.Put([]byte(v[0]), []byte(v[1]), nil)
-		case ActionsType_LINE:
-			dataByte, _ := json.Marshal(v)
-			err = db.Put([]byte(fmt.Sprintf("line_t%d_l%d_i%s", time.Now().Unix(), lc.Time(), k)), []byte(dataByte), nil)
-		case ActionsType_DEL:
-			err = db.Delete([]byte(v[1]), nil)
-		}
-
-		if err != nil {
-			errlog = append(errlog, err.Error())
-		}
-
+	err = writeLocaldb(action, data)
+	if err != nil {
+		return
 	}
 
 	b, err := json.Marshal([]*update{
@@ -251,5 +219,55 @@ func SendMessage(action ActionsType, data [][]string, to ...memberlist.Address) 
 		})
 	}
 
+	return
+}
+
+func writeLocaldb(action ActionsType, data [][]string) (err error) {
+
+	mtx.Lock()
+	defer mtx.Unlock()
+
+	for k, v := range data {
+
+		if len(v) != 2 {
+			continue
+		}
+
+		switch action {
+		case ActionsType_PUT:
+			err = db.Put([]byte(v[0]), []byte(v[1]), nil)
+		case ActionsType_LINE:
+			dataByte, _ := json.Marshal(v)
+			err = db.Put([]byte(fmt.Sprintf("line_t%d_l%d_i%d", time.Now().Unix(), lc.Time(), k)), []byte(dataByte), nil)
+		case ActionsType_DEL:
+			err = db.Delete([]byte(v[0]), nil)
+		}
+
+		if err != nil {
+			errlog = append(errlog, err.Error())
+			break
+		}
+
+	}
+
+	return
+}
+
+func readLocaldb(prefix string, limit uint) (m [][]string, err error) {
+
+	iter := db.NewIterator(nil, nil)
+	var i uint = 0
+	for iter.Next() {
+		i++
+		if bytes.HasPrefix(iter.Key(), []byte(prefix)) || prefix == "" {
+			m = append(m, []string{string(iter.Key()), string(iter.Value())})
+		}
+		if limit > 0 && i > limit {
+			break
+		}
+	}
+
+	iter.Release()
+	err = iter.Error()
 	return
 }

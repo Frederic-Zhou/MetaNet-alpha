@@ -81,6 +81,7 @@ require (
 	github.com/jmhodges/levigo v1.0.0 // indirect
 	github.com/lib/pq v1.10.3 // indirect
 	github.com/libp2p/go-buffer-pool v0.0.2 // indirect
+	github.com/mattn/go-sqlite3 v1.14.10
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/minio/highwayhash v1.0.2 // indirect
 	github.com/pborman/uuid v1.2.1

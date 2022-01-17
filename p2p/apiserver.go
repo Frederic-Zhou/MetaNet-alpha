@@ -28,6 +28,21 @@ func putHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("put success"))
 }
 
+func lineHandler(w http.ResponseWriter, r *http.Request) {
+
+	r.ParseForm()
+	key := r.Form.Get("key")
+	val := r.Form.Get("val")
+
+	err := SendMessage(ActionsType_LINE, [][]string{{key, val}})
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+
+	w.Write([]byte("put success"))
+}
+
 func delHandler(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	key := r.Form.Get("key")
@@ -61,15 +76,10 @@ func getHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func kv(w http.ResponseWriter, r *http.Request) {
+	prefix := r.Form.Get("prefix")
 
-	m := map[string]string{}
-	iter := db.NewIterator(nil, nil)
-	for iter.Next() {
-		m[string(iter.Key())] = string(iter.Value())
-	}
-	iter.Release()
-
-	if err := iter.Error(); err != nil {
+	m, err := readLocaldb(prefix, 0)
+	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
 	}

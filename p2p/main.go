@@ -31,6 +31,7 @@ func main() {
 	http.Handle("/asset/", http.StripPrefix("/asset/", fsh))
 
 	http.HandleFunc("/put", putHandler)
+	http.HandleFunc("/line", lineHandler)
 	http.HandleFunc("/del", delHandler)
 	http.HandleFunc("/get", getHandler)
 	http.HandleFunc("/sendto", sendtoHandler)
