@@ -19,29 +19,11 @@ func putHandler(w http.ResponseWriter, r *http.Request) {
 	key := r.Form.Get("key")
 	val := r.Form.Get("val")
 
-	mtx.Lock() //============lock
-	// lc.Increment()
-	_ = db.Put([]byte(key), []byte(val), nil)
-	b, err := json.Marshal([]*update{
-		{
-			Action: "put",
-			Data: map[string]string{
-				key: val,
-			},
-			// Lt: lc.Time(),
-		},
-	})
-	mtx.Unlock() //============unlock
-
+	err := SendMessage(ActionsType_PUT, [][]string{{key, val}})
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
 	}
-
-	broadcasts.QueueBroadcast(&broadcast{
-		msg:    append([]byte("d"), b...),
-		notify: nil,
-	})
 
 	w.Write([]byte("put success"))
 }
@@ -50,27 +32,16 @@ func delHandler(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	key := r.Form.Get("key")
 
-	mtx.Lock() //============lock
-	_ = db.Delete([]byte(key), nil)
-
-	b, err := json.Marshal([]*update{{
-		Action: "del",
-		Data: map[string]string{
-			key: "",
-		},
-		// Lt: lc.Increment(),
-	}})
-	mtx.Unlock() //============unlock
-
+	err := SendMessage(ActionsType_PUT, [][]string{{key, ""}})
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
 	}
 
-	broadcasts.QueueBroadcast(&broadcast{
-		msg:    append([]byte("d"), b...),
-		notify: nil,
-	})
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
 
 	w.Write([]byte("del success"))
 }
@@ -78,9 +49,8 @@ func delHandler(w http.ResponseWriter, r *http.Request) {
 func getHandler(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	key := r.Form.Get("key")
-	mtx.RLock() //============lock
+
 	val, err := db.Get([]byte(key), nil)
-	mtx.RUnlock() //============unlock
 
 	if err != nil {
 		http.Error(w, err.Error(), 500)
@@ -91,14 +61,13 @@ func getHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func kv(w http.ResponseWriter, r *http.Request) {
-	mtx.RLock() //============lock
+
 	m := map[string]string{}
 	iter := db.NewIterator(nil, nil)
 	for iter.Next() {
 		m[string(iter.Key())] = string(iter.Value())
 	}
 	iter.Release()
-	mtx.RUnlock() //============unlock
 
 	if err := iter.Error(); err != nil {
 		http.Error(w, err.Error(), 500)
@@ -116,28 +85,7 @@ func sendtoHandler(w http.ResponseWriter, r *http.Request) {
 	key := r.Form.Get("key")
 	val := r.Form.Get("val")
 
-	mtx.Lock() //============lock
-
-	// lc.Increment()
-	_ = db.Put([]byte(key), []byte(val), nil)
-	b, err := json.Marshal([]*update{
-		{
-			Action: "put",
-			Data: map[string]string{
-				key: val,
-			},
-			// Lt: lc.Time(),
-		},
-	})
-	mtx.Unlock() //============unlock
-
-	if err != nil {
-		http.Error(w, err.Error(), 500)
-		return
-	}
-
-	toAddr := memberlist.Address{Addr: toIP, Name: toName}
-	err = memberList.SendToAddress(toAddr, append([]byte("d"), b...))
+	err := SendMessage(ActionsType_PUT, [][]string{{key, val}}, memberlist.Address{Name: toName, Addr: toIP})
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return

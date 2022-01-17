@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/hashicorp/memberlist"
 	"github.com/syndtr/goleveldb/leveldb"
@@ -16,8 +17,16 @@ var (
 	memberList *memberlist.Memberlist
 	mdnsInfo   *agentMDNS
 	db         *leveldb.DB
-	// lc         = LamportClock{counter: 0}
-	errlog = []string{}
+	lc         = LamportClock{counter: 0}
+	errlog     = []string{}
+)
+
+type ActionsType string
+
+const (
+	ActionsType_PUT  ActionsType = "put"
+	ActionsType_DEL  ActionsType = "del"
+	ActionsType_LINE ActionsType = "line"
 )
 
 type broadcast struct {
@@ -28,13 +37,9 @@ type broadcast struct {
 type delegate struct{}
 
 type update struct {
-	Action string // put, del
-	Data   map[string]string
-	// Lt     LamportTime
-}
-
-func init() {
-
+	Action ActionsType // put, del
+	Data   [][]string
+	Lt     LamportTime
 }
 
 func (b *broadcast) Invalidates(other memberlist.Broadcast) bool {
@@ -55,6 +60,7 @@ func (d *delegate) NodeMeta(limit int) []byte {
 	return []byte{}
 }
 
+//处理收到消息
 func (d *delegate) NotifyMsg(b []byte) {
 	if len(b) == 0 {
 		return
@@ -68,15 +74,18 @@ func (d *delegate) NotifyMsg(b []byte) {
 		}
 		mtx.Lock()
 		for _, u := range updates {
-			// lc.Witness(u.Lt)
+			lc.Witness(u.Lt)
 			for k, v := range u.Data {
 				var err error
 				switch u.Action {
-				case "put":
+				case ActionsType_PUT:
 					// data := fmt.Sprintf("%s,%d", v, lc.Time())
-					err = db.Put([]byte(k), []byte(v), nil)
-				case "del":
-					err = db.Delete([]byte(k), nil)
+					err = db.Put([]byte(v[0]), []byte(v[1]), nil)
+				case ActionsType_LINE:
+					dataByte, _ := json.Marshal(v)
+					err = db.Put([]byte(fmt.Sprintf("line_t%d_l%d_i%s", time.Now().Unix(), lc.Time(), k)), []byte(dataByte), nil)
+				case ActionsType_DEL:
+					err = db.Delete([]byte(v[1]), nil)
 				}
 
 				if err != nil {
@@ -190,4 +199,57 @@ func Start(localName, clusterName string, port int, members []string) error {
 	}
 
 	return nil
+}
+
+//处理发送消息
+func SendMessage(action ActionsType, data [][]string, to ...memberlist.Address) (err error) {
+
+	for k, v := range data {
+		switch action {
+		case ActionsType_PUT:
+			// data := fmt.Sprintf("%s,%d", v, lc.Time())
+			err = db.Put([]byte(v[0]), []byte(v[1]), nil)
+		case ActionsType_LINE:
+			dataByte, _ := json.Marshal(v)
+			err = db.Put([]byte(fmt.Sprintf("line_t%d_l%d_i%s", time.Now().Unix(), lc.Time(), k)), []byte(dataByte), nil)
+		case ActionsType_DEL:
+			err = db.Delete([]byte(v[1]), nil)
+		}
+
+		if err != nil {
+			errlog = append(errlog, err.Error())
+		}
+
+	}
+
+	b, err := json.Marshal([]*update{
+		{
+			Action: action,
+			Data:   data,
+			Lt:     lc.Increment(),
+		},
+	})
+
+	if err != nil {
+		return
+	}
+
+	//有 to 单发
+	if len(to) > 0 {
+
+		for _, toAddr := range to {
+			err = memberList.SendToAddress(toAddr, append([]byte("d"), b...))
+			if err != nil {
+				return
+			}
+		}
+
+	} else { //无 to 广播
+		broadcasts.QueueBroadcast(&broadcast{
+			msg:    append([]byte("d"), b...),
+			notify: nil,
+		})
+	}
+
+	return
 }
