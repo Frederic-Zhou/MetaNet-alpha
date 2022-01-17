@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strconv"
 	"sync"
 
 	"github.com/hashicorp/memberlist"
@@ -117,13 +116,6 @@ func (d *delegate) MergeRemoteState(buf []byte, join bool) {
 		fmt.Println("MergeRemoteState", err)
 	}
 
-	lt, err := db.Get([]byte("__lamporttime__"), nil)
-	if err != nil {
-		os.Exit(0)
-	}
-
-	lc.counter, _ = strconv.ParseUint(string(lt), 10, 64)
-
 }
 
 type eventDelegate struct{}
@@ -224,8 +216,6 @@ func writeLocaldb(action ActionsType, data [][]string) (err error) {
 
 	mtx.Lock()
 	defer mtx.Unlock()
-	//持久化更新兰伯特时间
-	db.Put([]byte("__lamporttime__"), []byte(fmt.Sprintf("%d", lc.Time())), nil)
 
 	for _, v := range data {
 

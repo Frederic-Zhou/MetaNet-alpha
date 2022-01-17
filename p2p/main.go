@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"strconv"
 
 	"github.com/syndtr/goleveldb/leveldb"
 )
@@ -19,21 +18,6 @@ func main() {
 	db, err = leveldb.OpenFile(*dbpath, nil)
 	if err != nil {
 		os.Exit(4)
-	}
-
-	lt, err := db.Get([]byte("__lamporttime__"), nil)
-	if err != nil {
-		os.Exit(0)
-	}
-
-	lc.counter, err = strconv.ParseUint(string(lt), 10, 64)
-	if err != nil {
-		os.Exit(1)
-	}
-
-	if err != nil {
-		fmt.Println("db error:", err)
-		os.Exit(3)
 	}
 
 	fsh := http.FileServer(http.Dir("./web/asset"))
