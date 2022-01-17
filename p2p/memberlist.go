@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"sync"
-	"time"
 
 	"github.com/hashicorp/memberlist"
 	"github.com/syndtr/goleveldb/leveldb"
@@ -25,9 +24,8 @@ var (
 type ActionsType string
 
 const (
-	ActionsType_PUT  ActionsType = "put"
-	ActionsType_DEL  ActionsType = "del"
-	ActionsType_LINE ActionsType = "line"
+	ActionsType_PUT ActionsType = "put"
+	ActionsType_DEL ActionsType = "del"
 )
 
 type broadcast struct {
@@ -227,7 +225,7 @@ func writeLocaldb(action ActionsType, data [][]string) (err error) {
 	mtx.Lock()
 	defer mtx.Unlock()
 
-	for k, v := range data {
+	for _, v := range data {
 
 		if len(v) != 2 {
 			continue
@@ -236,9 +234,6 @@ func writeLocaldb(action ActionsType, data [][]string) (err error) {
 		switch action {
 		case ActionsType_PUT:
 			err = db.Put([]byte(v[0]), []byte(v[1]), nil)
-		case ActionsType_LINE:
-			dataByte, _ := json.Marshal(v)
-			err = db.Put([]byte(fmt.Sprintf("line_t%d_l%d_i%d", time.Now().Unix(), lc.Time(), k)), []byte(dataByte), nil)
 		case ActionsType_DEL:
 			err = db.Delete([]byte(v[0]), nil)
 		}

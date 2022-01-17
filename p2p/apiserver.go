@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/hashicorp/memberlist"
 )
@@ -28,19 +29,22 @@ func putHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("put success"))
 }
 
-func lineHandler(w http.ResponseWriter, r *http.Request) {
+func directlineHandler(w http.ResponseWriter, r *http.Request) {
 
 	r.ParseForm()
 	key := r.Form.Get("key")
 	val := r.Form.Get("val")
 
-	err := SendMessage(ActionsType_LINE, [][]string{{key, val}})
+	k := fmt.Sprintf("line_t%d_l%d", time.Now().Unix(), lc.Time())
+	v, _ := json.Marshal([]string{key, val})
+
+	err := SendMessage(ActionsType_PUT, [][]string{{k, string(v)}})
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
 	}
 
-	w.Write([]byte("put success"))
+	w.Write([]byte("put line success"))
 }
 
 func delHandler(w http.ResponseWriter, r *http.Request) {
