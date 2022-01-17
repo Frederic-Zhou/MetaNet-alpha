@@ -34,7 +34,7 @@ func directlineHandler(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	val := r.Form.Get("val")
 
-	k := fmt.Sprintf("line_t%d_l%d", time.Now().Unix(), lc.Time())
+	k := fmt.Sprintf("LINE_T%d_L%d", time.Now().Unix(), lc.Time())
 	fmt.Println(k, val)
 	err := SendMessage(ActionsType_PUT, [][]string{{k, val}})
 	if err != nil {

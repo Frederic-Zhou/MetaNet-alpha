@@ -185,7 +185,6 @@ func Start(clusterName string, port int, members []string) error {
 
 //处理发送消息
 func SendMessage(action ActionsType, data [][]string, to ...memberlist.Address) (err error) {
-
 	err = writeLocaldb(action, data)
 	if err != nil {
 		return
@@ -224,15 +223,18 @@ func SendMessage(action ActionsType, data [][]string, to ...memberlist.Address) 
 }
 
 func writeLocaldb(action ActionsType, data [][]string) (err error) {
-	fmt.Println("write....")
+	// fmt.Println("write....")
 	mtx.Lock()
 	defer mtx.Unlock()
-	fmt.Println("write....1")
+	// fmt.Println("write....1")
 	for _, v := range data {
-		fmt.Println("write....2", v)
+		// fmt.Println("write....2", v)
 		if len(v) != 2 {
 			continue
 		}
+
+		//持久化更新兰伯特时间
+		db.Put([]byte("__lamporttime__"), []byte(fmt.Sprintf("%d", lc.Time())), nil)
 
 		switch action {
 		case ActionsType_PUT:
