@@ -110,8 +110,6 @@ func (d *delegate) MergeRemoteState(buf []byte, join bool) {
 	if err := json.Unmarshal(buf, &m); err != nil {
 		return
 	}
-	mtx.Lock()
-	defer mtx.Unlock()
 
 	// for _, v := range m {
 	// 	err := db.Put([]byte(v[0]), []byte(v[1]), nil)
@@ -124,7 +122,10 @@ func (d *delegate) MergeRemoteState(buf []byte, join bool) {
 	// 	// lc.Witness(LamportTime(t) - 1)
 	// }
 
-	_ = writeLocaldb(ActionsType_PUT, m)
+	err := writeLocaldb(ActionsType_PUT, m)
+	if err != nil {
+		fmt.Println("MergeRemoteState", err)
+	}
 
 }
 
@@ -223,12 +224,12 @@ func SendMessage(action ActionsType, data [][]string, to ...memberlist.Address) 
 }
 
 func writeLocaldb(action ActionsType, data [][]string) (err error) {
-
+	fmt.Println("write....")
 	mtx.Lock()
 	defer mtx.Unlock()
-
+	fmt.Println("write....1")
 	for _, v := range data {
-
+		fmt.Println("write....2", v)
 		if len(v) != 2 {
 			continue
 		}
