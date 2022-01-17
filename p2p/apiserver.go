@@ -32,13 +32,11 @@ func putHandler(w http.ResponseWriter, r *http.Request) {
 func directlineHandler(w http.ResponseWriter, r *http.Request) {
 
 	r.ParseForm()
-	key := r.Form.Get("key")
 	val := r.Form.Get("val")
 
-	k := fmt.Sprintf("line_t%d_l%d_s%s", time.Now().Unix(), lc.Time())
-	v, _ := json.Marshal([]string{key, val})
+	k := fmt.Sprintf("line_t%d_l%d", time.Now().Unix(), lc.Time())
 
-	err := SendMessage(ActionsType_PUT, [][]string{{k, string(v)}})
+	err := SendMessage(ActionsType_PUT, [][]string{{k, val}})
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
