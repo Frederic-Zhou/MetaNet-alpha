@@ -120,7 +120,11 @@ function ref_kv(){
 			var arr=v0.split(':');
 			var vn=v0;
 			if(arr.length>2){
-				vn='<b>'+arr[2]+'</b> <i>'+arr[1]+'</i>';
+				if(arr[2]==window['username']){
+					vn='<b style="color:blue">'+arr[2]+'</b> <i>'+arr[1]+'</i>';
+				}else{
+					vn='<b>'+arr[2]+'</b> <i>'+arr[1]+'</i>';
+				}
 			}
 			if($('#'+v00).length<1){
 				msgcon.append('<p id="'+v00+'">'+vn+'：'+v[1]+'</p>');
