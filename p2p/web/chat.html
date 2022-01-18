@@ -15,9 +15,9 @@
 <style type="text/css">
 .chat{position:absolute;left:0;right:0;top:0;bottom:0;}
 .lt{position:absolute;z-index:1;left:0;top:0;bottom:0;right:280px;background-color:#fff;}
-.rt{position:absolute;z-index:1;top:0;bottom:0;right:0;width:280px;background-color:#ddd;}
+.rt{position:absolute;z-index:1;top:0;bottom:0;right:0;width:277px;border-left:2px solid #ddd;background-color:#eee;padding:16px 8px;}
 .msg{position:absolute;z-index:2;top:0;left:0;right:0;bottom:200px;padding:16px;}
-.msg i{color:#ccc;font-size:12px;}
+.msg i,.rt i{color:#ccc;font-size:12px;}
 .input{position:absolute;z-index:2;left:0;right:0;bottom:0;height:200px;background-color:#eee;padding:16px 8px;}
 </style>
 </head>
@@ -34,8 +34,8 @@
 				<div class="layui-form-item">
 					<div class="layui-inline">
 						<label class="layui-form-label">内容:</label>
-						<div class="layui-input-inline">
-							<input type="text" name="val" value="" class="layui-input" lay-verify="required">
+						<div class="layui-input-inline" style="width:300px;">
+							<input type="text" name="val" id="msgval" value="" class="layui-input" lay-verify="required">
 						</div>
 						<div class="layui-input-inline" style="width:auto">
 							<button type="submit" class="layui-btn" lay-submit>发送</button>
@@ -46,7 +46,10 @@
 			</form>
 		</div>
 	</div>
-	<div class="rt member"></div>
+	<div class="rt member">
+		<p><b>用户列表：</b></p>
+		<div id="members"></div>
+	</div>
 </div>
 
 
@@ -62,6 +65,7 @@
 });*/
 window['username']='';
 window['lastkey']='';
+window['isconn']=0;
 var msgcon=$('#msgcon');
 
 function show_membername(){
@@ -80,11 +84,25 @@ function show_membername(){
 function start(){
 	$('#uname').html('姓名：'+window['username'])
 	$.post('/start',{local_name:window['username']},function(res){
-		ref_kv()
+		window['isconn']=1;
+		ref_kv();
+		load_member();
 	});
 }
 
+function load_member(){
+	if(!window['isconn']){msgcry('掉线啦');return;}
+	var str=''
+	$.get('/info',function(res){
+		$.each(res['members'],function(k,v){
+			str+='<p>● '+v['Name']+' <i>'+v['Addr']+':'+v['Port']+'</i></p>'
+		});
+		$('#members').html(str)
+	},'json');
+}
+
 function ref_kv(){
+	if(!window['isconn']){msgcry('掉线啦');return;}
 	$.post('/kv',{prefix:'line',seek:window['lastkey']},function(res){
 		$.each(res,function(k,v){
 			var v0=v[0],v00=v0.replace(/\:/g,'_');
@@ -119,6 +137,7 @@ layui.use(function(){
 		var data=zs.serialize();
 		$.post(act_url,data,function(res){
 			ref_kv()
+			$('#msgval').val('')
 		});
 	})
 });
