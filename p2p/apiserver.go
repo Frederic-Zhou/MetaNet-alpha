@@ -199,6 +199,15 @@ func dashboard(w http.ResponseWriter, r *http.Request) {
 	t.Execute(w, nil)
 }
 
+func chat(w http.ResponseWriter, r *http.Request) {
+	t, err := template.ParseFiles("./web/chat.html")
+	if err != nil {
+		panic(err)
+	}
+
+	t.Execute(w, nil)
+}
+
 func basicAuth(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Extract the username and password from the request

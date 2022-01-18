@@ -35,6 +35,7 @@ func main() {
 	http.HandleFunc("/info", infoHandler)
 	http.HandleFunc("/kv", kv)
 	http.HandleFunc("/", dashboard)
+	http.HandleFunc("/chat", chat)
 	// http.HandleFunc("/", basicAuth(dashboard))
 	http.HandleFunc("/start", start)
 	http.HandleFunc("/stop", stop)
