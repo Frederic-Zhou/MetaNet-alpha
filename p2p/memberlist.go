@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 	"sync"
 
 	"github.com/hashicorp/memberlist"
@@ -66,6 +67,8 @@ func (d *delegate) NotifyMsg(b []byte) {
 		return
 	}
 
+	fmt.Println("msg:", string(b))
+
 	switch b[0] {
 	case 'd': // data
 		var updates []*update
@@ -73,8 +76,8 @@ func (d *delegate) NotifyMsg(b []byte) {
 			return
 		}
 		for _, u := range updates {
-			lc.Increment()
-			lc.Witness(u.Lt)
+			lc.Increment()   //收到消息，lampport时间+1，
+			lc.Witness(u.Lt) ////然后比较收到消息的lamport时间和本地lamport时间，取大值（如果消息的大，那么+1）
 			err := writeLocaldb(u.Action, u.Data)
 			if err != nil {
 				return
@@ -109,6 +112,13 @@ func (d *delegate) MergeRemoteState(buf []byte, join bool) {
 	m := [][]string{}
 	if err := json.Unmarshal(buf, &m); err != nil {
 		return
+	}
+
+	//将合并的lamport时间读取到本地lamport时间
+	for _, v := range m {
+		if v[0] == "__lamporttime__" {
+			lc.counter, _ = strconv.ParseUint(v[1], 10, 64)
+		}
 	}
 
 	err := writeLocaldb(ActionsType_PUT, m)
@@ -174,7 +184,7 @@ func Start(clusterName string, port int, members []string) error {
 
 //处理发送消息
 func SendMessage(action ActionsType, data [][]string, to ...memberlist.Address) (err error) {
-
+	lt := lc.Increment() //发生发送事件，lamport时间+1 并附带到发送的消息中
 	err = writeLocaldb(action, data)
 	if err != nil {
 		return
@@ -184,7 +194,7 @@ func SendMessage(action ActionsType, data [][]string, to ...memberlist.Address) 
 		{
 			Action: action,
 			Data:   data,
-			Lt:     lc.Increment(),
+			Lt:     lt,
 		},
 	})
 
@@ -216,6 +226,8 @@ func writeLocaldb(action ActionsType, data [][]string) (err error) {
 
 	mtx.Lock()
 	defer mtx.Unlock()
+
+	saveLamportTime() //保存lamport时间到数据库
 
 	for _, v := range data {
 
@@ -257,4 +269,26 @@ func readLocaldb(prefix string, limit uint) (m [][]string, err error) {
 	iter.Release()
 	err = iter.Error()
 	return
+}
+
+//从数据库中提取lamporttime
+func initLamportTime() {
+	ltdata, err := db.Get([]byte("__lamporttime__"), nil)
+	if err != nil {
+		errlog = append(errlog, err.Error())
+		return
+	}
+	lc.counter, err = strconv.ParseUint(string(ltdata), 10, 64)
+	if err != nil {
+		errlog = append(errlog, err.Error())
+		return
+	}
+}
+
+//保存lamporttime到数据库
+func saveLamportTime() {
+	err := db.Put([]byte("__lamporttime__"), []byte(fmt.Sprintf("%d", lc.Time())), nil)
+	if err != nil {
+		errlog = append(errlog, err.Error())
+	}
 }

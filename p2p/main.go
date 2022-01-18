@@ -20,6 +20,8 @@ func main() {
 		os.Exit(4)
 	}
 
+	initLamportTime()
+
 	fsh := http.FileServer(http.Dir("./web/asset"))
 	http.Handle("/asset/", http.StripPrefix("/asset/", fsh))
 
