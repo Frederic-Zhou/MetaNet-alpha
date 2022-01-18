@@ -85,16 +85,18 @@ function start(){
 }
 
 function ref_kv(){
-	$.post('/kv',{prefix:'line'},function(res){
+	$.post('/kv',{prefix:'line',seek:window['lastkey']},function(res){
 		$.each(res,function(k,v){
 			var v0=v[0],v00=v0.replace(/\:/g,'_');
+			if(v0=='__lamporttime__'){return true;}
 			var arr=v0.split(':');
 			var vn=v0;
 			if(arr.length>2){
 				vn='<b>'+arr[2]+'</b> <i>'+arr[1]+'</i>';
 			}
 			if($('#'+v00).length<1){
-				msgcon.append('<p id="'+v00+'">'+vn+'：'+v[1]+'</p>')
+				msgcon.append('<p id="'+v00+'">'+vn+'：'+v[1]+'</p>');
+				window['lastkey']=v0
 			}
 		})
 	},'json');
