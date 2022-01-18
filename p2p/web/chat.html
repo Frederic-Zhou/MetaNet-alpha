@@ -12,9 +12,114 @@
 <link rel="stylesheet" href="asset/css/fonta/css/font-awesome.min.css" media="all">
 <link rel="stylesheet" href="asset/css/common.css" media="all">
 
-
+<style type="text/css">
+.chat{position:absolute;left:0;right:0;top:0;bottom:0;}
+.lt{position:absolute;z-index:1;left:0;top:0;bottom:0;right:280px;background-color:#fff;}
+.rt{position:absolute;z-index:1;top:0;bottom:0;right:0;width:280px;background-color:#ddd;}
+.msg{position:absolute;z-index:2;top:0;left:0;right:0;bottom:200px;padding:16px;}
+.msg i{color:#ccc;font-size:12px;}
+.input{position:absolute;z-index:2;left:0;right:0;bottom:0;height:200px;background-color:#eee;padding:16px 8px;}
+</style>
 </head>
 
 <body>
+
+<div class="chat">
+	<div class="lt">
+		<div class="msg">
+			<div id="msgcon"></div>
+		</div>
+		<div class="input">
+			<form action="/directline" class="layui-form msgform">
+				<div class="layui-form-item">
+					<div class="layui-inline">
+						<label class="layui-form-label">内容:</label>
+						<div class="layui-input-inline">
+							<input type="text" name="val" value="" class="layui-input" lay-verify="required">
+						</div>
+						<div class="layui-input-inline" style="width:auto">
+							<button type="submit" class="layui-btn" lay-submit>发送</button>
+						</div>
+						<div class="layui-form-mid layui-word-aux" id="uname"></div>
+					</div>
+				</div>
+			</form>
+		</div>
+	</div>
+	<div class="rt member"></div>
+</div>
+
+
+<script type="text/javascript" src="asset/js/jquery.min.js"></script>
+<script type="text/javascript" src="asset/js/layui/layui.js"></script>
+<script type="text/javascript" src="asset/js/lay-config.js"></script>
+<script type="text/javascript" src="asset/js/fn.js"></script>
+<script type="text/javascript">
+/*$.ajaxSetup({
+	error:function(xmlreq,txt,err){
+		layer.alert(xmlreq['responseText'],{icon:2})
+	}
+});*/
+window['username']='';
+window['lastkey']='';
+var msgcon=$('#msgcon');
+
+function show_membername(){
+	layer.prompt({
+		title:'请输入用户名',area: ['800px', '350px']
+		}, function(value, index, elem){
+			var v=$.trim(value);
+			if(v==''){alerterr('请输入用户名');return;}
+			sessionStorage.setItem('username',v);
+			window['username']=v;
+			start();
+			layer.close(index);
+	});
+}
+
+function start(){
+	$('#uname').html('姓名：'+window['username'])
+	$.post('/start',{local_name:window['username']},function(res){
+		ref_kv()
+	});
+}
+
+function ref_kv(){
+	$.post('/kv',{prefix:'line'},function(res){
+		$.each(res,function(k,v){
+			var v0=v[0],v00=v0.replace(/\:/g,'_');
+			var arr=v0.split(':');
+			var vn=v0;
+			if(arr.length>2){
+				vn='<b>'+arr[2]+'</b> <i>'+arr[1]+'</i>';
+			}
+			if($('#'+v00).length<1){
+				msgcon.append('<p id="'+v00+'">'+vn+'：'+v[1]+'</p>')
+			}
+		})
+	},'json');
+}
+
+layui.use(function(){
+	var uname=sessionStorage.getItem('username');
+	if(!uname){
+		show_membername()
+	}else{
+		window['username']=uname;
+		start();
+	}
+
+	$('.msgform').on('submit',function(e){
+		e.preventDefault();
+		var zs=$(this);
+		var act_url=zs.attr('action');
+		var method=zs.attr('method');
+		var data=zs.serialize();
+		$.post(act_url,data,function(res){
+			ref_kv()
+		});
+	})
+});
+</script>
 </body>
 </html>
