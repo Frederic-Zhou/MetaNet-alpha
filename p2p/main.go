@@ -32,6 +32,7 @@ func main() {
 	http.HandleFunc("/get", getHandler)
 	http.HandleFunc("/sendto", sendtoHandler)
 	http.HandleFunc("/join", joinHandler)
+	http.HandleFunc("/leave", leaveHandler)
 	http.HandleFunc("/info", infoHandler)
 	http.HandleFunc("/kv", kv)
 	http.HandleFunc("/", dashboard)

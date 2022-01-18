@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/hashicorp/memberlist"
 )
@@ -121,6 +122,16 @@ func joinHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Write([]byte(fmt.Sprintf("join success: %d", i)))
+}
+
+func leaveHandler(w http.ResponseWriter, r *http.Request) {
+	err := memberList.Leave(2 * time.Second)
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+
+	w.Write([]byte("leave success"))
 }
 
 func infoHandler(w http.ResponseWriter, r *http.Request) {
