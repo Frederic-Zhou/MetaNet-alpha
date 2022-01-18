@@ -139,7 +139,11 @@ layui.use(function(){
 			ref_kv()
 			$('#msgval').val('')
 		});
-	})
+	});
+
+	setInterval(function(){
+		load_member();
+	},10000);
 });
 </script>
 </body>
