@@ -19,6 +19,7 @@
 .msg{position:absolute;z-index:2;top:0;left:0;right:0;bottom:200px;padding:16px;}
 .msg i,.rt i{color:#ccc;font-size:12px;}
 .input{position:absolute;z-index:2;left:0;right:0;bottom:0;height:200px;background-color:#eee;padding:16px 8px;}
+#msgcon{overflow-y:scroll;height:96%;}
 </style>
 </head>
 
@@ -70,19 +71,25 @@ var msgcon=$('#msgcon');
 
 function show_membername(){
 	layer.prompt({
-		title:'请输入用户名',area: ['800px', '350px']
+		title:'请输入用户名',value:window['username'],area: ['800px', '350px']
 		}, function(value, index, elem){
 			var v=$.trim(value);
 			if(v==''){alerterr('请输入用户名');return;}
 			sessionStorage.setItem('username',v);
 			window['username']=v;
-			start();
+			stop(function(){start();})
 			layer.close(index);
 	});
 }
-
+function stop(fn){
+	$.post('/stop',function(res){
+		if(typeof(fn)=='function'){
+			fn()
+		}
+	});
+}
 function start(){
-	$('#uname').html('姓名：'+window['username'])
+	$('#uname').html('姓名：'+window['username']+' <a href="javascript:;" onclick="show_membername()">改名</a>')
 	$.post('/start',{local_name:window['username']},function(res){
 		window['isconn']=1;
 		ref_kv();
@@ -115,6 +122,7 @@ function ref_kv(){
 			if($('#'+v00).length<1){
 				msgcon.append('<p id="'+v00+'">'+vn+'：'+v[1]+'</p>');
 				window['lastkey']=v0
+				msgcon.scrollTop(999999);
 			}
 		})
 	},'json');
@@ -126,7 +134,7 @@ layui.use(function(){
 		show_membername()
 	}else{
 		window['username']=uname;
-		start();
+		stop(function(){start();})
 	}
 
 	$('.msgform').on('submit',function(e){
@@ -142,6 +150,7 @@ layui.use(function(){
 	});
 
 	setInterval(function(){
+		ref_kv();
 		load_member();
 	},10000);
 });
