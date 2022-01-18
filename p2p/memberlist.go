@@ -94,7 +94,7 @@ func (d *delegate) GetBroadcasts(overhead, limit int) [][]byte {
 }
 
 func (d *delegate) LocalState(join bool) []byte {
-	m, err := readLocaldb("", 0)
+	m, err := readLocaldb("", "", 0)
 	if err != nil {
 		fmt.Println("get state error:", err)
 	}
@@ -253,10 +253,15 @@ func writeLocaldb(action ActionsType, data [][]string) (err error) {
 	return
 }
 
-func readLocaldb(prefix string, limit uint) (m [][]string, err error) {
+func readLocaldb(prefix string, seek string, limit uint) (m [][]string, err error) {
 
 	iter := db.NewIterator(nil, nil)
 	var i uint = 0
+
+	if seek != "" {
+		iter.Seek([]byte(seek))
+	}
+
 	for iter.Next() {
 		i++
 		if bytes.HasPrefix(iter.Key(), []byte(prefix)) || prefix == "" {

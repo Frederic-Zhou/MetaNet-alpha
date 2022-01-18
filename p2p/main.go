@@ -10,6 +10,7 @@ import (
 )
 
 func main() {
+
 	port := flag.Int("port", 8800, "http port")
 	dbpath := flag.String("dbpath", "./db", "db path")
 

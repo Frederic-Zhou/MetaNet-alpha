@@ -33,7 +33,7 @@ func directlineHandler(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	val := r.Form.Get("val")
 
-	k := fmt.Sprintf("LINE_L:%d_N:%s", lc.Time(), localName)
+	k := fmt.Sprintf("LINE_L:%011d_N:%s", lc.Time(), localName)
 	fmt.Println(k, val)
 	err := SendMessage(ActionsType_PUT, [][]string{{k, val}})
 	if err != nil {
@@ -78,8 +78,9 @@ func getHandler(w http.ResponseWriter, r *http.Request) {
 
 func kv(w http.ResponseWriter, r *http.Request) {
 	prefix := r.Form.Get("prefix")
+	seek := r.Form.Get("seek")
 
-	m, err := readLocaldb(prefix, 0)
+	m, err := readLocaldb(prefix, seek, 0)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
