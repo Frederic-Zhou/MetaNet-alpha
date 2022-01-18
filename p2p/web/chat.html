@@ -82,6 +82,9 @@ function show_membername(){
 	});
 }
 function stop(fn){
+	if(!window['isconn']){
+		fn();return;
+	}
 	$.post('/stop',function(res){
 		if(typeof(fn)=='function'){
 			fn()
