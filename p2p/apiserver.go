@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-	"time"
 
 	"github.com/hashicorp/memberlist"
 )
@@ -34,7 +33,7 @@ func directlineHandler(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	val := r.Form.Get("val")
 
-	k := fmt.Sprintf("LINE_T%d_L%d", time.Now().Unix(), lc.Time())
+	k := fmt.Sprintf("LINE_L:%d_N:%s", lc.Time(), localName)
 	fmt.Println(k, val)
 	err := SendMessage(ActionsType_PUT, [][]string{{k, val}})
 	if err != nil {

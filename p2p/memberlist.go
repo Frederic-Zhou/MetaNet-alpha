@@ -76,8 +76,8 @@ func (d *delegate) NotifyMsg(b []byte) {
 			return
 		}
 		for _, u := range updates {
-			lc.Increment()   //收到消息，lampport时间+1，
 			lc.Witness(u.Lt) ////然后比较收到消息的lamport时间和本地lamport时间，取大值（如果消息的大，那么+1）
+			fmt.Println("cur lamport time:", lc.Time())
 			err := writeLocaldb(u.Action, u.Data)
 			if err != nil {
 				return
@@ -117,7 +117,8 @@ func (d *delegate) MergeRemoteState(buf []byte, join bool) {
 	//将合并的lamport时间读取到本地lamport时间
 	for _, v := range m {
 		if v[0] == "__lamporttime__" {
-			lc.counter, _ = strconv.ParseUint(v[1], 10, 64)
+			otherlt, _ := strconv.ParseUint(v[1], 10, 64)
+			lc.Witness(LamportTime(otherlt))
 		}
 	}
 
