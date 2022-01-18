@@ -28,6 +28,8 @@ type ActionsType string
 const (
 	ActionsType_PUT ActionsType = "put"
 	ActionsType_DEL ActionsType = "del"
+
+	LamportKey = "__lamporttime__"
 )
 
 type broadcast struct {
@@ -116,7 +118,7 @@ func (d *delegate) MergeRemoteState(buf []byte, join bool) {
 
 	//将合并的lamport时间读取到本地lamport时间
 	for _, v := range m {
-		if v[0] == "__lamporttime__" {
+		if v[0] == LamportKey {
 			otherlt, _ := strconv.ParseUint(v[1], 10, 64)
 			lc.Witness(LamportTime(otherlt))
 		}
@@ -279,7 +281,7 @@ func readLocaldb(prefix string, seek string, limit uint) (m [][]string, err erro
 
 //从数据库中提取lamporttime
 func initLamportTime() {
-	ltdata, err := db.Get([]byte("__lamporttime__"), nil)
+	ltdata, err := db.Get([]byte(LamportKey), nil)
 	if err != nil {
 		errlog = append(errlog, err.Error())
 		return
@@ -293,7 +295,7 @@ func initLamportTime() {
 
 //保存lamporttime到数据库
 func saveLamportTime() {
-	err := db.Put([]byte("__lamporttime__"), []byte(fmt.Sprintf("%d", lc.Time())), nil)
+	err := db.Put([]byte(LamportKey), []byte(fmt.Sprintf("%d", lc.Time())), nil)
 	if err != nil {
 		errlog = append(errlog, err.Error())
 	}
