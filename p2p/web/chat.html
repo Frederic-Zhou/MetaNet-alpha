@@ -122,6 +122,7 @@ function ref_kv(){
 			if($('#'+v00).length<1){
 				msgcon.append('<p id="'+v00+'">'+vn+'：'+v[1]+'</p>');
 				window['lastkey']=v0
+				msgcon.scrollTop(999999);
 			}
 		})
 	},'json');
@@ -149,6 +150,7 @@ layui.use(function(){
 	});
 
 	setInterval(function(){
+		ref_kv();
 		load_member();
 	},10000);
 });
