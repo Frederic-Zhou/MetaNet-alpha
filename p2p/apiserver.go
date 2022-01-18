@@ -48,7 +48,7 @@ func delHandler(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	key := r.Form.Get("key")
 
-	err := SendMessage(ActionsType_PUT, [][]string{{key, ""}})
+	err := SendMessage(ActionsType_DEL, [][]string{{key, ""}})
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
