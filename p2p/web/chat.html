@@ -103,7 +103,7 @@ function load_member(){
 
 function ref_kv(){
 	if(!window['isconn']){msgcry('掉线啦');return;}
-	$.post('/kv',{prefix:'line',seek:window['lastkey']},function(res){
+	$.post('/kv',{prefix:'LINE',seek:window['lastkey']},function(res){
 		$.each(res,function(k,v){
 			var v0=v[0],v00=v0.replace(/\:/g,'_');
 			if(v0=='__lamporttime__'){return true;}

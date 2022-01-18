@@ -77,8 +77,11 @@ func getHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func kv(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
 	prefix := r.Form.Get("prefix")
 	seek := r.Form.Get("seek")
+
+	fmt.Println("request seek:", seek, prefix)
 
 	m, err := readLocaldb(prefix, seek, 0)
 	if err != nil {

@@ -261,7 +261,7 @@ func readLocaldb(prefix string, seek string, limit uint) (m [][]string, err erro
 	var i uint = 0
 
 	if seek != "" {
-		iter.Seek([]byte(seek))
+		_ = iter.Seek([]byte(seek))
 	}
 
 	for iter.Next() {
