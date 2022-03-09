@@ -3,3 +3,4 @@ MetaNet-alpha
 workspace.code-workspace
 archived
 *.exe
+.DS_Store
