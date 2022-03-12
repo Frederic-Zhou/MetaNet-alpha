@@ -22,7 +22,7 @@ type peerInfo struct {
 func udpDial2Server(raddr *net.UDPAddr) (pi peerInfo, err error) {
 	dialer, err = net.DialUDP("udp", nil, raddr)
 	if err != nil {
-		fmt.Printf("listen udp server error:%v\n", err)
+		fmt.Printf("1.listen udp server error:%v\n", err)
 	}
 	defer dialer.Close()
 
@@ -90,12 +90,12 @@ func udpListen4Peer(laddr *net.UDPAddr) (err error) {
 	}
 }
 
-func udpSendmsg2Peer(msg string, raddr *net.UDPAddr) (err error) {
+func udpSendmsg2Peer(msg string, laddr, raddr *net.UDPAddr) (err error) {
 
-	fmt.Println("向peer发送数据", msg, raddr.String())
-	dialer, err = net.DialUDP("udp", nil, raddr)
+	fmt.Printf("向peer发送数据 \"%s\" %s -> %s \n", msg, laddr.String(), raddr.String())
+	dialer, err = net.DialUDP("udp", laddr, raddr)
 	if err != nil {
-		fmt.Printf("listen udp server error:%v\n", err)
+		fmt.Printf("2listen udp server error:%v\n", err)
 	}
 	defer dialer.Close()
 
@@ -107,7 +107,7 @@ func udpSendmsg2Peer(msg string, raddr *net.UDPAddr) (err error) {
 		return
 	}
 
-	fmt.Println("等待回收数据...")
+	fmt.Print("等待回收数据...:")
 	// 接收数据
 	data := make([]byte, 4096)
 	n := 0
@@ -117,7 +117,7 @@ func udpSendmsg2Peer(msg string, raddr *net.UDPAddr) (err error) {
 		return
 	}
 
-	fmt.Println(data[:n])
+	fmt.Println(string(data[:n]))
 
 	return
 }
@@ -137,27 +137,26 @@ func main() {
 		return
 	}
 
-	//2.监听刚才与服务器通信的本地端口
 	laddr, err := net.ResolveUDPAddr(pi.Network, pi.Addr)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	go udpListen4Peer(laddr)
-
-	//3.向所有peer发送UDP请求，打通隧道
+	//2.向所有peer发送UDP请求，打通隧道
 	for name, addr := range pi.Peers {
 		raddr, err := net.ResolveUDPAddr(addr.Network, addr.Addr)
 		if err != nil {
 			fmt.Println(err)
 			continue
 		}
-		err = udpSendmsg2Peer(name, raddr)
+		err = udpSendmsg2Peer(name, laddr, raddr)
 		if err != nil {
 			fmt.Println(err)
 		}
 	}
 
-	select {}
+	//3.监听刚才与服务器通信的本地端口
+	udpListen4Peer(laddr)
+
 }
