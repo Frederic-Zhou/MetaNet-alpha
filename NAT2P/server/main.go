@@ -25,6 +25,7 @@ func main() {
 
 func udpServer() {
 	// 建立 udp 服务器
+	fmt.Println("启动server")
 	listen, err := net.ListenUDP("udp", &net.UDPAddr{
 		IP:   net.IPv4(0, 0, 0, 0),
 		Port: 9090,
