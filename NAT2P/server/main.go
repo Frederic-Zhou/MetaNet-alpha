@@ -16,8 +16,11 @@ type peer struct {
 }
 
 func main() {
-	udpServer()
-	// tcpServer()
+
+	go udpServer()
+	go tcpServer()
+
+	select {}
 }
 
 func udpServer() {
@@ -52,11 +55,7 @@ func udpServer() {
 			peers[k.(string)] = v.(peer)
 			return true
 		})
-		responsedata, err := json.Marshal(map[string]interface{}{
-			"addr":    addr.String(),
-			"network": addr.Network(),
-			"peers":   peers,
-		})
+		responsedata, err := json.Marshal(peers)
 
 		fmt.Println(string(responsedata))
 
@@ -76,7 +75,11 @@ func udpServer() {
 
 func tcpServer() {
 	// 建立 tcp 服务
-	listen, err := net.Listen("tcp", "0.0.0.0:9090")
+	// listen, err := net.Listen("tcp", "0.0.0.0:9090")
+	listen, err := net.ListenTCP("tcp", &net.TCPAddr{
+		IP:   net.IPv4(0, 0, 0, 0),
+		Port: 9090,
+	})
 	if err != nil {
 		fmt.Printf("listen failed, err:%v\n", err)
 		return

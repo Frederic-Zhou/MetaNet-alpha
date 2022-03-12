@@ -19,27 +19,19 @@ type peerInfo struct {
 	Peers   map[string]peer `json:"peers"`
 }
 
-func dial2server() (pi peerInfo, err error) {
-	dialer, err = net.DialUDP("udp",
-		&net.UDPAddr{
-			IP:   net.IPv4(0, 0, 0, 0),
-			Port: 1234,
-		},
-		&net.UDPAddr{
-			IP:   net.IPv4(0, 0, 0, 0),
-			Port: 9090,
-		})
+func udpDial2Server(raddr *net.UDPAddr) (pi peerInfo, err error) {
+	dialer, err = net.DialUDP("udp", nil, raddr)
 	if err != nil {
 		fmt.Printf("listen udp server error:%v\n", err)
 	}
 	defer dialer.Close()
 
-	fmt.Println("will send")
+	fmt.Println("will send to sever")
 	// 发送数据
 	sendData := []byte("Hello server")
 	_, err = dialer.Write(sendData) // 发送数据
 	if err != nil {
-		fmt.Println("发送数据失败，err:", err)
+		fmt.Println("1发送数据失败，err:", err)
 		return
 	}
 
@@ -48,27 +40,25 @@ func dial2server() (pi peerInfo, err error) {
 	n := 0
 	n, _, err = dialer.ReadFromUDP(data) // 接收数据
 	if err != nil {
-		fmt.Println("接收数据失败，err:", err)
+		fmt.Println("1接收数据失败，err:", err)
 		return
 	}
 
-	// fmt.Println(string(data[:n]))
-
-	err = json.Unmarshal(data[:n], &pi)
+	err = json.Unmarshal(data[:n], &pi.Peers)
 	if err != nil {
-		fmt.Println("数据转换失败，err:", err)
+		fmt.Println("1数据转换失败，err:", err)
 		return
 	}
+
+	pi.Addr = dialer.LocalAddr().String()
+	pi.Network = dialer.LocalAddr().Network()
 
 	return
 }
 
-func listen4peer() {
+func udpListen4Peer(laddr *net.UDPAddr) (err error) {
 	// 建立 udp 服务器
-	listener, err := net.ListenUDP("udp", &net.UDPAddr{
-		IP:   net.IPv4(0, 0, 0, 0),
-		Port: 1234,
-	})
+	listener, err = net.ListenUDP("udp", laddr)
 	if err != nil {
 		fmt.Printf("listen failed error:%v\n", err)
 		return
@@ -78,7 +68,9 @@ func listen4peer() {
 	for {
 		// 接收数据
 		var data [4096]byte
-		n, addr, err := listener.ReadFromUDP(data[:])
+		var addr *net.UDPAddr
+		var n int
+		n, addr, err = listener.ReadFromUDP(data[:])
 		if err != nil {
 			fmt.Printf("read data error:%v\n", err)
 			return
@@ -95,8 +87,70 @@ func listen4peer() {
 	}
 }
 
+func udpSendmsg2Peer(msg string, raddr *net.UDPAddr) (err error) {
+	dialer, err = net.DialUDP("udp", nil, raddr)
+	if err != nil {
+		fmt.Printf("listen udp server error:%v\n", err)
+	}
+	defer dialer.Close()
+
+	// 发送数据
+	sendData := []byte(msg)
+	_, err = dialer.Write(sendData) // 发送数据
+	if err != nil {
+		fmt.Println("2发送数据失败，err:", err)
+		return
+	}
+
+	// 接收数据
+	data := make([]byte, 4096)
+	n := 0
+	n, _, err = dialer.ReadFromUDP(data) // 接收数据
+	if err != nil {
+		fmt.Println("2接收数据失败，err:", err)
+		return
+	}
+
+	fmt.Println(data[:n])
+
+	return
+}
+
 func main() {
-	pi, err := dial2server()
+
+	//与服务器通信，并获得
+	pi, err := udpDial2Server(&net.UDPAddr{
+		IP:   net.IPv4(1, 14, 102, 100),
+		Port: 9090,
+	})
 
 	fmt.Println(pi, err)
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	// //向所有peer发送UDP请求，打通隧道
+	// for name, addr := range pi.Peers {
+	// 	raddr, err := net.ResolveUDPAddr(addr.Network, addr.Addr)
+	// 	if err != nil {
+	// 		fmt.Println(err)
+	// 		continue
+	// 	}
+	// 	err = udpSendmsg2Peer(name, raddr)
+	// 	if err != nil {
+	// 		fmt.Println(err)
+	// 	}
+	// }
+
+	// //监听刚才与服务器通信的本地端口
+	// laddr, err := net.ResolveUDPAddr(pi.Network, pi.Addr)
+	// if err != nil {
+	// 	fmt.Println(err)
+	// 	return
+	// }
+
+	// udpListen4Peer(laddr)
+
 }
