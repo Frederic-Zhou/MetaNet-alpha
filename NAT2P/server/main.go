@@ -35,7 +35,7 @@ func udpServer() {
 		return
 	}
 	defer listen.Close() // 使用完关闭服务
-
+	fmt.Println("准备接收数据...")
 	for {
 		// 接收数据
 		fmt.Println("接收数据中...")
