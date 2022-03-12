@@ -37,7 +37,7 @@ func udpServer() {
 
 	for {
 		// 接收数据
-		fmt.Println("接收数据")
+		fmt.Println("接收数据中...")
 		var data [1024]byte
 		var id string
 		n, addr, err := listen.ReadFromUDP(data[:])
@@ -47,7 +47,7 @@ func udpServer() {
 		}
 
 		id = string(data[:n])
-		fmt.Printf("addr:%v\t count:%v\t data:%v\n", addr, n, string(data[:n]))
+		fmt.Printf("addr:%v\t count:%v\t data:%v\n", addr, n, id)
 
 		peersMap.Store(id, peer{Addr: addr.String(), Network: addr.Network()})
 
