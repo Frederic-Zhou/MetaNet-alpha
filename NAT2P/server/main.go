@@ -50,8 +50,6 @@ func udpServer() {
 		id = string(data[:n])
 		fmt.Printf("addr:%v\t count:%v\t data:%v\n", addr, n, id)
 
-		peersMap.Store(id, peer{Addr: addr.String(), Network: addr.Network()})
-
 		peers := map[string]peer{}
 		peersMap.Range(func(k interface{}, v interface{}) bool {
 			peers[k.(string)] = v.(peer)
@@ -72,6 +70,8 @@ func udpServer() {
 			fmt.Printf("send data error:%v\n", err)
 			return
 		}
+
+		peersMap.Store(id, peer{Addr: addr.String(), Network: addr.Network()})
 	}
 }
 

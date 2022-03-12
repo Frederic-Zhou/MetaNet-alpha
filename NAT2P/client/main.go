@@ -57,6 +57,8 @@ func udpDial2Server(raddr *net.UDPAddr) (pi peerInfo, err error) {
 }
 
 func udpListen4Peer(laddr *net.UDPAddr) (err error) {
+
+	fmt.Println("listen", laddr.String())
 	// 建立 udp 服务器
 	listener, err = net.ListenUDP("udp", laddr)
 	if err != nil {
@@ -66,6 +68,7 @@ func udpListen4Peer(laddr *net.UDPAddr) (err error) {
 	defer listener.Close() // 使用完关闭服务
 
 	for {
+		fmt.Println("listen 等待接收数据")
 		// 接收数据
 		var data [4096]byte
 		var addr *net.UDPAddr
@@ -75,7 +78,7 @@ func udpListen4Peer(laddr *net.UDPAddr) (err error) {
 			fmt.Printf("read data error:%v\n", err)
 			return
 		}
-
+		fmt.Println("listen 接收到一个数据")
 		fmt.Printf("addr:%v\t count:%v\t data:%v\n", addr, n, string(data[:n]))
 
 		// 发送数据
@@ -88,6 +91,8 @@ func udpListen4Peer(laddr *net.UDPAddr) (err error) {
 }
 
 func udpSendmsg2Peer(msg string, raddr *net.UDPAddr) (err error) {
+
+	fmt.Println("向peer发送数据", msg, raddr.String())
 	dialer, err = net.DialUDP("udp", nil, raddr)
 	if err != nil {
 		fmt.Printf("listen udp server error:%v\n", err)
@@ -102,6 +107,7 @@ func udpSendmsg2Peer(msg string, raddr *net.UDPAddr) (err error) {
 		return
 	}
 
+	fmt.Println("等待回收数据...")
 	// 接收数据
 	data := make([]byte, 4096)
 	n := 0
@@ -118,7 +124,7 @@ func udpSendmsg2Peer(msg string, raddr *net.UDPAddr) (err error) {
 
 func main() {
 
-	//与服务器通信，并获得
+	//1.与服务器通信，并获得
 	pi, err := udpDial2Server(&net.UDPAddr{
 		IP:   net.IPv4(1, 14, 102, 100),
 		Port: 9090,
@@ -131,26 +137,27 @@ func main() {
 		return
 	}
 
-	// //向所有peer发送UDP请求，打通隧道
-	// for name, addr := range pi.Peers {
-	// 	raddr, err := net.ResolveUDPAddr(addr.Network, addr.Addr)
-	// 	if err != nil {
-	// 		fmt.Println(err)
-	// 		continue
-	// 	}
-	// 	err = udpSendmsg2Peer(name, raddr)
-	// 	if err != nil {
-	// 		fmt.Println(err)
-	// 	}
-	// }
+	//2.监听刚才与服务器通信的本地端口
+	laddr, err := net.ResolveUDPAddr(pi.Network, pi.Addr)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
-	// //监听刚才与服务器通信的本地端口
-	// laddr, err := net.ResolveUDPAddr(pi.Network, pi.Addr)
-	// if err != nil {
-	// 	fmt.Println(err)
-	// 	return
-	// }
+	go udpListen4Peer(laddr)
 
-	// udpListen4Peer(laddr)
+	//3.向所有peer发送UDP请求，打通隧道
+	for name, addr := range pi.Peers {
+		raddr, err := net.ResolveUDPAddr(addr.Network, addr.Addr)
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+		err = udpSendmsg2Peer(name, raddr)
+		if err != nil {
+			fmt.Println(err)
+		}
+	}
 
+	select {}
 }
