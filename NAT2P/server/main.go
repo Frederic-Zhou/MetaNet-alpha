@@ -37,6 +37,7 @@ func udpServer() {
 
 	for {
 		// 接收数据
+		fmt.Println("接收数据")
 		var data [1024]byte
 		var id string
 		n, addr, err := listen.ReadFromUDP(data[:])
