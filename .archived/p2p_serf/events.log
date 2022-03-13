@@ -1,0 +1,217 @@
+member-join|MacBook-Pro.local None:MacBook-Pro.local	127.0.0.1	member	datacenter=office,role=member
+query|MacBook-Pro.local say:adsfasf
+member-join|MacBook-Pro.local None:MacBook-Pro.local	127.0.0.1	member	datacenter=office,role=member
+user|MacBook-Pro.local hi:hh
+query|MacBook-Pro.local say:哈哈哈哈
+member-join MacBook-Pro.local :MacBook-Pro.local	127.0.0.1	member	datacenter=office,role=member
+query MacBook-Pro.local say:good
+query MacBook-Pro.local say:还可以
+query MacBook-Pro.local say:也是不致于
+member-join MacBook-Pro.local :MacBook-Pro.local	127.0.0.1	member	datacenter=office,role=member
+member-join MacBook-Pro.local :DESKTOP-FIKHDQS	127.0.0.1	member	datacenter=office,role=member
+member-join MacBook-Pro.local :bai	192.168.3.35	member	role=member,datacenter=office
+member-failed MacBook-Pro.local :DESKTOP-FIKHDQS	127.0.0.1	member	datacenter=office,role=member
+member-join MacBook-Pro.local :DESKTOP-FIKHDQS	127.0.0.1	member	datacenter=office,role=member
+member-failed MacBook-Pro.local :DESKTOP-FIKHDQS	127.0.0.1	member	datacenter=office,role=member
+member-join MacBook-Pro.local :DESKTOP-FIKHDQS	127.0.0.1	member	datacenter=office,role=member
+member-failed MacBook-Pro.local :DESKTOP-FIKHDQS	127.0.0.1	member	datacenter=office,role=member
+member-join MacBook-Pro.local :DESKTOP-FIKHDQS	127.0.0.1	member	role=member,datacenter=office
+member-failed MacBook-Pro.local :DESKTOP-FIKHDQS	127.0.0.1	member	role=member,datacenter=office
+member-join MacBook-Pro.local :DESKTOP-FIKHDQS	127.0.0.1	member	datacenter=office,role=member
+member-failed MacBook-Pro.local :DESKTOP-FIKHDQS	127.0.0.1	member	datacenter=office,role=member
+member-join MacBook-Pro.local :DESKTOP-FIKHDQS	127.0.0.1	member	role=member,datacenter=office
+member-failed MacBook-Pro.local :DESKTOP-FIKHDQS	127.0.0.1	member	role=member,datacenter=office
+member-join MacBook-Pro.local :DESKTOP-FIKHDQS	127.0.0.1	member	role=member,datacenter=office
+member-failed MacBook-Pro.local :DESKTOP-FIKHDQS	127.0.0.1	member	datacenter=office,role=member
+member-join MacBook-Pro.local :MacBook-Pro.local	127.0.0.1	member	datacenter=office,role=member
+member-join MacBook-Pro.local :bai	192.168.3.35	member	role=member,datacenter=office
+query MacBook-Pro.local say:sdfjkasldfjka
+member-join MacBook-Pro.local :zxw	192.168.3.108	member	role=member,datacenter=office
+query MacBook-Pro.local say:123
+query MacBook-Pro.local say:aaa
+member-join fred :fred	192.168.3.88	member	role=member,datacenter=office
+member-join fred :zxw	192.168.3.108	member	role=member,datacenter=office
+member-join fred :MacBook-Pro.local	127.0.0.1	member	datacenter=office,role=member
+member-join fred :bai	192.168.3.35	member	role=member,datacenter=office
+member-failed fred :MacBook-Pro.local	127.0.0.1	member	datacenter=office,role=member
+query fred say:sdfjkasfdas
+query fred say:ok 看到了
+query fred say:阿斯顿发送到发a
+query fred say:好吧
+query fred say:看不到
+query fred say:515151
+member-failed fred :bai	192.168.3.35	member	role=member,datacenter=office
+query fred say:测试一下
+member-join fred :bai	192.168.3.35	member	role=member,datacenter=office
+query fred say:新消息12345
+query fred say:jjkjkj
+query fred say:lkjkl
+query fred say:lkjk
+query fred say:测试11
+query fred say:测试utf8
+member-join fred :bai	192.168.3.35	member	datacenter=office,role=member
+member-join fred :zxw	192.168.3.108	member	role=member,datacenter=office
+member-join fred :fred	192.168.3.88	member	role=member,datacenter=office
+query fred say:测试3
+query fred say:哈哈哈
+query fred say:测试2
+query fred say:很好
+member-join fred :bbbbbcccccc	192.168.3.41	member	role=member,datacenter=office
+query fred say:888
+query fred say:member
+query fred say:哈哈哈111ancb
+query fred say:pow
+query fred say:1
+query fred say:000
+query fred say:d
+query fred say:d
+query fred say:query
+query fred say:query -node bai -node bbbbbcccccc
+query fred say:ll
+query fred hello:fred
+query fred test002:111
+query fred say:hhh
+query fred say:3333333
+query fred say:lll
+query fred say:ll
+query fred say:2222
+query fred say:中文测试
+query fred say:2222
+member-leave fred :bai	192.168.3.35	member	datacenter=office,role=member
+query fred say:2222
+member-join fred :bai	192.168.3.35	member	role=member,datacenter=office
+query fred say:啊收到开发就撒了就来反馈建设大路附近
+query fred say:query fred say 666
+query fred say:788
+query fred say:query fred says 666
+query fred say:777l
+query fred say:query zxw says 666
+query fred say:吃饭了
+query fred say:asdf
+query fred say:123
+query fred say:123
+query fred say:321
+query fred say:111121111
+query fred say:123
+query fred say:321
+query fred say:111
+query fred say:123
+query fred say:ok
+query fred say:321
+user fred aaa:bbb
+user fred isok:8
+user fred isok:8
+member-join fred :bai	192.168.3.35	member	role=member,datacenter=office
+member-join fred :zxw	192.168.3.108	member	role=member,datacenter=office
+member-join fred :fred	192.168.3.88	member	datacenter=office,role=member
+query fred say:ppp
+query fred say:great!
+query fred say:111
+member-join fred :bbbbbcccccc	192.168.3.41	member	datacenter=office,role=member
+query fred say:000
+query fred say:测试4
+query fred say:4324
+query fred say:gwegwgew
+query fred say:啥
+query fred say:655
+member-join fred :fred	192.168.3.88	member	role=member,datacenter=office
+query fred say:kkk
+member-join fred :zxw	192.168.3.108	member	role=member,datacenter=office
+member-join fred :bai	192.168.3.35	member	datacenter=office,role=member
+query fred say:aaaa
+query fred say:pop
+member-join fred :bbbbbcccccc	192.168.3.41	member	datacenter=office,role=member
+query fred say:哈哈哈
+query fred say:来个中文
+member-join fred :bai	192.168.3.35	member	role=member,datacenter=office
+member-join fred :zxw	192.168.3.108	member	role=member,datacenter=office
+member-join fred :fred	192.168.3.88	member	role=member,datacenter=office
+query fred say:join 192.168.3.88
+member-join fred :bbbbbcccccc	192.168.3.41	member	datacenter=office,role=member
+query fred say:lkkllklk
+query fred say:哈啊啊
+query fred say:丢失了
+query fred say:1111
+query fred say:测试7
+query fred say:ll
+query fred say:哈啊啊
+query fred say:0xf3d466
+query fred say:哈啊啊
+query fred say:111
+query fred say:哈啊啊
+query fred say:11111
+query fred say:zxw -11
+query fred say:..................................
+query fred say:dddddd
+query fred abc:defgh
+query fred say:中文
+query fred say:1111
+query fred say:纯中文
+query fred say:纯中文
+query fred say:11
+query fred say:999
+query fred say:popeye
+query fred say:aaahello
+query fred say:halou 中文
+query fred say:中文+数字0
+query fred say:中文
+query fred say:测试7
+query fred say:测试2
+query fred say:2测试
+query fred say:文字范围
+query fred say:abc八成
+query fred say:中文
+query fred say:三个字
+query fred say:四个字
+query fred say:四个字啊
+query fred say:种子
+query fred say:啊哈哈
+query fred say:娃哈哈
+query fred say:啊哈哈
+query fred say:啊哈哈+1
+query fred say:娃哈哈啊娃哈哈，每个人脸上都笑开颜
+query fred say:啊
+query fred say:啊44444
+query fred say:你好你好啊
+query fred say:pc包
+query fred say:你好你好
+query fred say:pc包臣
+query fred say:111
+query fred say:abc
+query fred say:+++
+query fred say:中 文
+query fred say:你好 啊
+query fred say:中  文
+query fred say:你好 啊啊
+query fred say:中   文
+query fred say:中    文
+query fred say:你好   啊
+query fred say:哦 哦
+query fred say:哦哦
+query fred say:中文五个字
+query fred say:一二三四五六七
+user fred a:中文
+user fred a:aaa
+user fred a:aaa
+user fred a:aaa
+query fred say:v
+user fred a:aaa
+user fred a:aaa
+query fred say:d
+member-join fred :bai	192.168.3.35	member	datacenter=office,role=member
+member-join fred :fred	192.168.3.88	member	datacenter=office,role=member
+member-join fred :zxw	192.168.3.108	member	datacenter=office,role=member
+member-join fred :bbbbbcccccc	192.168.3.41	member	datacenter=office,role=member
+query fred say:list
+member-leave fred :fred	192.168.3.88	member	datacenter=office,role=member
+member-join fred :zxw	192.168.3.108	member	datacenter=office,role=member
+member-join fred :bai	192.168.3.35	member	role=member,datacenter=office
+member-join fred :fred	192.168.3.88	member	role=member,datacenter=office
+member-join fred :bbbbbcccccc	192.168.3.41	member	role=member,datacenter=office
+query fred say:test'ddd"
+member-leave fred :bai	192.168.3.35	member	role=member,datacenter=office
+query fred say:!@#$%^&*()_)(*&^%$#@#$%^&*()_+*&^%$$%^&*()":L><M<>?><MNBVCXZWER^&*()__)(IOP{)(IL:
+member-join fred :bai	192.168.3.35	member	role=member,datacenter=office
+query fred say:000
+query fred say:ppppppppppppp
+member-failed fred :bbbbbcccccc	192.168.3.41	member	datacenter=office,role=member

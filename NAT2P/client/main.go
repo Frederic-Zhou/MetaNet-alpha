@@ -2,11 +2,14 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"net"
+
+	"github.com/sirupsen/logrus"
 )
 
 var dialer, listener *net.UDPConn
+var clientID = "ABCD"
+var reply2peer = "ok"
 
 var svcUdpAddr = net.UDPAddr{
 	IP:   net.IPv4(0, 0, 0, 0),
@@ -27,16 +30,16 @@ type registerResult struct {
 func udpDial2Server(raddr *net.UDPAddr) (rr registerResult, err error) {
 	dialer, err = net.DialUDP("udp", nil, raddr)
 	if err != nil {
-		fmt.Printf("1.listen udp server error:%v\n", err)
+		logrus.Errorf("连接%s服务器(%s)错误:%v\n", raddr.Network(), raddr.String(), err)
 	}
 	defer dialer.Close()
 
-	fmt.Println("will send to sever")
 	// 发送数据
-	sendData := []byte("Hello server")
+	sendData := []byte(clientID)
+	logrus.Infof("发送数据给服务器 %s \n", clientID)
 	_, err = dialer.Write(sendData) // 发送数据
 	if err != nil {
-		fmt.Println("1发送数据失败，err:", err)
+		logrus.Errorf("发送数据失败，err:%v \n", err)
 		return
 	}
 
@@ -45,13 +48,13 @@ func udpDial2Server(raddr *net.UDPAddr) (rr registerResult, err error) {
 	n := 0
 	n, _, err = dialer.ReadFromUDP(data) // 接收数据
 	if err != nil {
-		fmt.Println("1接收数据失败，err:", err)
+		logrus.Errorf("接收数据失败，err: %v \n", err)
 		return
 	}
 
 	err = json.Unmarshal(data[:n], &rr.Peers)
 	if err != nil {
-		fmt.Println("1数据转换失败，err:", err)
+		logrus.Errorf("数据转换失败，err: %v \n", err)
 		return
 	}
 
@@ -62,33 +65,33 @@ func udpDial2Server(raddr *net.UDPAddr) (rr registerResult, err error) {
 
 func udpListen4Peer(laddr *net.UDPAddr) (err error) {
 
-	fmt.Println("listen", laddr.String())
+	logrus.Infof("UDP监听本地 %v\n", laddr.String())
 	// 建立 udp 服务器
 	listener, err = net.ListenUDP("udp", laddr)
 	if err != nil {
-		fmt.Printf("listen failed error:%v\n", err)
+		logrus.Errorf("UDP监听创建失败:%v\n", err)
 		return
 	}
 	defer listener.Close() // 使用完关闭服务
 
 	for {
-		fmt.Println("listen 等待接收数据")
+		logrus.Infoln("等待接收数据")
 		// 接收数据
 		var data [4096]byte
 		var addr *net.UDPAddr
 		var n int
 		n, addr, err = listener.ReadFromUDP(data[:])
 		if err != nil {
-			fmt.Printf("read data error:%v\n", err)
+			logrus.Errorf("读取数据错误:%v\n", err)
 			return
 		}
-		fmt.Println("listen 接收到一个数据")
-		fmt.Printf("addr:%v\t count:%v\t data:%v\n", addr, n, string(data[:n]))
+
+		logrus.Infof("addr:%v\t count:%v\t data:%v\n", addr, n, string(data[:n]))
 
 		// 发送数据
-		_, err = listener.WriteToUDP([]byte("ok"), addr)
+		_, err = listener.WriteToUDP([]byte(reply2peer), addr)
 		if err != nil {
-			fmt.Printf("send data error:%v\n", err)
+			logrus.Errorf("发送数据失败:%v\n", err)
 			return
 		}
 	}
@@ -96,10 +99,10 @@ func udpListen4Peer(laddr *net.UDPAddr) (err error) {
 
 func udpSendmsg2Peer(msg string, laddr, raddr *net.UDPAddr) (err error) {
 
-	fmt.Printf("向peer发送数据 \"%s\" %s -> %s \n", msg, laddr.String(), raddr.String())
+	logrus.Infof("向peer发送数据 \"%s\" %s -> %s \n", msg, laddr.String(), raddr.String())
 	dialer, err = net.DialUDP("udp", laddr, raddr)
 	if err != nil {
-		fmt.Printf("2listen udp server error:%v\n", err)
+		logrus.Errorf("2listen udp server error:%v\n", err)
 	}
 	defer dialer.Close()
 
@@ -107,21 +110,27 @@ func udpSendmsg2Peer(msg string, laddr, raddr *net.UDPAddr) (err error) {
 	sendData := []byte(msg)
 	_, err = dialer.Write(sendData) // 发送数据
 	if err != nil {
-		fmt.Println("2发送数据失败，err:", err)
+		logrus.Errorf("发送数据失败，err: %v\n", err)
 		return
 	}
 
-	fmt.Print("等待回收数据...:")
+	logrus.Infoln("等待回收数据...")
 	// 接收数据
-	data := make([]byte, 4096)
+	data := make([]byte, 512)
 	n := 0
 	n, _, err = dialer.ReadFromUDP(data) // 接收数据
 	if err != nil {
-		fmt.Println("2接收数据失败，err:", err)
+		logrus.Errorf("接收数据失败，err:%v \n", err)
 		return
 	}
 
-	fmt.Println(string(data[:n]))
+	if string(data[:n]) == reply2peer {
+		logrus.Infoln("消息发送成功")
+	} else {
+		logrus.Errorln("消息返回失败")
+	}
+
+	logrus.Infof("收到数据 %s\n", string(data[:n]))
 
 	return
 }
@@ -130,23 +139,22 @@ func main() {
 
 	//1.与服务器通信，并获得
 	rr, err := udpDial2Server(&svcUdpAddr)
-
 	if err != nil {
-		fmt.Println(err)
+		logrus.Errorf("%v\n", err)
 		return
 	}
-	fmt.Println(rr, err)
+	logrus.Infof("注册返回消息: %v | %v\n", rr, err)
 
 	//2.向所有peer发送UDP请求，打通隧道
 	for name, addr := range rr.Peers {
 		raddr, err := net.ResolveUDPAddr(addr.Network, addr.Addr)
 		if err != nil {
-			fmt.Println(err)
+			logrus.Errorf("%v\n", err)
 			continue
 		}
 		err = udpSendmsg2Peer(name, rr.LocalAddr.(*net.UDPAddr), raddr)
 		if err != nil {
-			fmt.Println(err)
+			logrus.Errorf("%v\n", err)
 		}
 	}
 

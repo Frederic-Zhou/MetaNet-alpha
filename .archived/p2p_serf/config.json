@@ -1,0 +1,12 @@
+{
+    "node_name": "fred",
+    "bind": "192.168.3.88:5000",
+    "discover": "metanet",
+    "tags": {
+        "role": "member",
+        "datacenter": "office"
+    },
+    "event_handlers": [
+        "python3 ./eventhandler.py"
+    ]
+}

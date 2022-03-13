@@ -3,9 +3,10 @@ package main
 import (
 	"bufio"
 	"encoding/json"
-	"fmt"
 	"net"
 	"sync"
+
+	"github.com/sirupsen/logrus"
 )
 
 var peersMap = sync.Map{}
@@ -26,53 +27,55 @@ func main() {
 
 func udpServer() {
 	// 建立 udp 服务器
-	fmt.Println("启动server")
+	logrus.Info("启动 UDP server")
 	listen, err := net.ListenUDP("udp", &net.UDPAddr{
 		IP:   net.IPv4(0, 0, 0, 0),
 		Port: udpPort,
 	})
 	if err != nil {
-		fmt.Printf("listen failed error:%v\n", err)
+		logrus.Errorf("listen failed error:%v\n", err)
 		return
 	}
 	defer listen.Close() // 使用完关闭服务
-	fmt.Println("准备接收数据...")
 	for {
 		// 接收数据
-		fmt.Println("接收数据中...")
+		logrus.Info("接收UDP数据")
 		var data [1024]byte
 		var id string
 		n, addr, err := listen.ReadFromUDP(data[:])
 		if err != nil {
-			fmt.Printf("read data error:%v\n", err)
+			logrus.Errorf("read data error:%v\n", err)
 			return
 		}
 
 		//客户端发送注册的内容作为唯一识别ID，日后优化客户端的消息生成以及服务端的验证方式。
 		id = string(data[:n])
-		fmt.Printf("addr:%v\t count:%v\t data:%v\n", addr, n, id)
+		logrus.Infof("客户端地址:%v\t 数据长度:%v\t 数据:%v\n", addr, n, id)
 
+		//保存到服务器节点列表
 		peersMap.Store(id, peer{Addr: addr.String(), Network: addr.Network()})
 
+		//将节点信息读取到一个map中
 		peers := map[string]peer{}
 		peersMap.Range(func(k interface{}, v interface{}) bool {
 			peers[k.(string)] = v.(peer)
 			return true
 		})
 
-		registDate, err := json.Marshal(peers)
+		registData, err := json.Marshal(peers)
 		if err != nil {
-			fmt.Printf("response data error:%v\n", err)
+			logrus.Errorf("response data error:%v\n", err)
 			return
 		}
 
-		// 发送数据
-		_, err = listen.WriteToUDP(registDate, addr)
+		// 发送数据，将之前保存的节点map发送给客户端
+		_, err = listen.WriteToUDP(registData, addr)
 		if err != nil {
-			fmt.Printf("send data error:%v\n", err)
+			logrus.Errorf("send data error:%v\n", err)
 			return
 		}
-		fmt.Println(string(registDate))
+
+		logrus.Infof("registData:%s\n", string(registData))
 
 	}
 }
@@ -85,7 +88,7 @@ func tcpServer() {
 		Port: 9090,
 	})
 	if err != nil {
-		fmt.Printf("listen failed, err:%v\n", err)
+		logrus.Errorf("listen failed, err:%v\n", err)
 		return
 	}
 
@@ -93,7 +96,7 @@ func tcpServer() {
 		// 等待客户端建立连接
 		conn, err := listen.Accept()
 		if err != nil {
-			fmt.Printf("accept failed, err:%v\n", err)
+			logrus.Errorf("accept failed, err:%v\n", err)
 			continue
 		}
 		// 启动一个单独的 goroutine 去处理连接
@@ -111,17 +114,17 @@ func process(conn net.Conn) {
 		var buf [128]byte
 		n, err := reader.Read(buf[:])
 		if err != nil {
-			fmt.Printf("read from conn failed, err:%v\n", err)
+			logrus.Errorf("read from conn failed, err:%v\n", err)
 			break
 		}
 
 		recv := string(buf[:n])
-		fmt.Printf("收到的数据：%v\n", recv)
+		logrus.Infof("收到的数据：%v\n", recv)
 
 		// 将接受到的数据返回给客户端
 		_, err = conn.Write([]byte("ok"))
 		if err != nil {
-			fmt.Printf("write from conn failed, err:%v\n", err)
+			logrus.Errorf("write from conn failed, err:%v\n", err)
 			break
 		}
 	}
