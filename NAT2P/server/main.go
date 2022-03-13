@@ -9,6 +9,7 @@ import (
 )
 
 var peersMap = sync.Map{}
+var udpPort = 9090
 
 type peer struct {
 	Addr    string `json:"addr"`
@@ -28,7 +29,7 @@ func udpServer() {
 	fmt.Println("启动server")
 	listen, err := net.ListenUDP("udp", &net.UDPAddr{
 		IP:   net.IPv4(0, 0, 0, 0),
-		Port: 9090,
+		Port: udpPort,
 	})
 	if err != nil {
 		fmt.Printf("listen failed error:%v\n", err)
@@ -47,6 +48,7 @@ func udpServer() {
 			return
 		}
 
+		//客户端发送注册的内容作为唯一识别ID，日后优化客户端的消息生成以及服务端的验证方式。
 		id = string(data[:n])
 		fmt.Printf("addr:%v\t count:%v\t data:%v\n", addr, n, id)
 
@@ -57,21 +59,20 @@ func udpServer() {
 			peers[k.(string)] = v.(peer)
 			return true
 		})
-		responsedata, err := json.Marshal(peers)
 
-		fmt.Println(string(responsedata))
-
+		registDate, err := json.Marshal(peers)
 		if err != nil {
 			fmt.Printf("response data error:%v\n", err)
 			return
 		}
 
 		// 发送数据
-		_, err = listen.WriteToUDP(responsedata, addr)
+		_, err = listen.WriteToUDP(registDate, addr)
 		if err != nil {
 			fmt.Printf("send data error:%v\n", err)
 			return
 		}
+		fmt.Println(string(registDate))
 
 	}
 }

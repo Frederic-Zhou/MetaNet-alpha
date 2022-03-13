@@ -8,18 +8,23 @@ import (
 
 var dialer, listener *net.UDPConn
 
+var svcUdpAddr = net.UDPAddr{
+	IP:   net.IPv4(0, 0, 0, 0),
+	Port: 9090,
+}
+
+//
 type peer struct {
 	Addr    string `json:"addr"`
 	Network string `json:"network"`
 }
 
-type peerInfo struct {
-	Addr    string          `json:"addr"`
-	Network string          `json:"network"`
-	Peers   map[string]peer `json:"peers"`
+type registerResult struct {
+	LocalAddr net.Addr
+	Peers     map[string]peer `json:"peers"`
 }
 
-func udpDial2Server(raddr *net.UDPAddr) (pi peerInfo, err error) {
+func udpDial2Server(raddr *net.UDPAddr) (rr registerResult, err error) {
 	dialer, err = net.DialUDP("udp", nil, raddr)
 	if err != nil {
 		fmt.Printf("1.listen udp server error:%v\n", err)
@@ -44,14 +49,13 @@ func udpDial2Server(raddr *net.UDPAddr) (pi peerInfo, err error) {
 		return
 	}
 
-	err = json.Unmarshal(data[:n], &pi.Peers)
+	err = json.Unmarshal(data[:n], &rr.Peers)
 	if err != nil {
 		fmt.Println("1数据转换失败，err:", err)
 		return
 	}
 
-	pi.Addr = dialer.LocalAddr().String()
-	pi.Network = dialer.LocalAddr().Network()
+	rr.LocalAddr, err = net.ResolveUDPAddr(dialer.LocalAddr().Network(), dialer.LocalAddr().String())
 
 	return
 }
@@ -125,38 +129,28 @@ func udpSendmsg2Peer(msg string, laddr, raddr *net.UDPAddr) (err error) {
 func main() {
 
 	//1.与服务器通信，并获得
-	pi, err := udpDial2Server(&net.UDPAddr{
-		IP:   net.IPv4(1, 14, 102, 100),
-		Port: 9090,
-	})
-
-	fmt.Println(pi, err)
+	rr, err := udpDial2Server(&svcUdpAddr)
 
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-
-	laddr, err := net.ResolveUDPAddr(pi.Network, pi.Addr)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+	fmt.Println(rr, err)
 
 	//2.向所有peer发送UDP请求，打通隧道
-	for name, addr := range pi.Peers {
+	for name, addr := range rr.Peers {
 		raddr, err := net.ResolveUDPAddr(addr.Network, addr.Addr)
 		if err != nil {
 			fmt.Println(err)
 			continue
 		}
-		err = udpSendmsg2Peer(name, laddr, raddr)
+		err = udpSendmsg2Peer(name, rr.LocalAddr.(*net.UDPAddr), raddr)
 		if err != nil {
 			fmt.Println(err)
 		}
 	}
 
 	//3.监听刚才与服务器通信的本地端口
-	udpListen4Peer(laddr)
+	udpListen4Peer(rr.LocalAddr.(*net.UDPAddr))
 
 }
