@@ -12,7 +12,7 @@ var clientID = "ABCD"
 var reply2peer = "ok"
 
 var svcUdpAddr = net.UDPAddr{
-	IP:   net.IPv4(0, 0, 0, 0),
+	IP:   net.IPv4(1, 14, 102, 100),
 	Port: 9090,
 }
 
