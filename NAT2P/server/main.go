@@ -10,12 +10,7 @@ import (
 )
 
 var peersMap = sync.Map{}
-var udpPort = 9090
-
-type peer struct {
-	Addr    string `json:"addr"`
-	Network string `json:"network"`
-}
+var port = 9998
 
 func main() {
 
@@ -30,7 +25,7 @@ func udpServer() {
 	logrus.Info("启动 UDP server")
 	listen, err := net.ListenUDP("udp", &net.UDPAddr{
 		IP:   net.IPv4(0, 0, 0, 0),
-		Port: udpPort,
+		Port: port,
 	})
 	if err != nil {
 		logrus.Errorf("listen failed error:%v\n", err)
@@ -52,30 +47,19 @@ func udpServer() {
 		id = string(data[:n])
 		logrus.Infof("客户端地址:%v\t 数据长度:%v\t 数据:%v\n", addr, n, id)
 
-		//保存到服务器节点列表
-		peersMap.Store(id, peer{Addr: addr.String(), Network: addr.Network()})
-
-		//将节点信息读取到一个map中
-		peers := map[string]peer{}
-		peersMap.Range(func(k interface{}, v interface{}) bool {
-			peers[k.(string)] = v.(peer)
-			return true
-		})
-
-		registData, err := json.Marshal(peers)
+		registerData, err := storePeers(id, addr)
 		if err != nil {
-			logrus.Errorf("response data error:%v\n", err)
 			return
 		}
 
 		// 发送数据，将之前保存的节点map发送给客户端
-		_, err = listen.WriteToUDP(registData, addr)
+		_, err = listen.WriteToUDP(registerData, addr)
 		if err != nil {
 			logrus.Errorf("send data error:%v\n", err)
 			return
 		}
 
-		logrus.Infof("registData:%s\n", string(registData))
+		logrus.Infof("registerData:%s\n", string(registerData))
 
 	}
 }
@@ -83,9 +67,10 @@ func udpServer() {
 func tcpServer() {
 	// 建立 tcp 服务
 	// listen, err := net.Listen("tcp", "0.0.0.0:9090")
+	logrus.Info("启动 TCP server")
 	listen, err := net.ListenTCP("tcp", &net.TCPAddr{
 		IP:   net.IPv4(0, 0, 0, 0),
-		Port: 9090,
+		Port: port,
 	})
 	if err != nil {
 		logrus.Errorf("listen failed, err:%v\n", err)
@@ -111,21 +96,48 @@ func process(conn net.Conn) {
 	// 针对当前连接做发送和接受操作
 	for {
 		reader := bufio.NewReader(conn)
-		var buf [128]byte
+		var buf [512]byte
 		n, err := reader.Read(buf[:])
 		if err != nil {
 			logrus.Errorf("read from conn failed, err:%v\n", err)
 			break
 		}
 
-		recv := string(buf[:n])
-		logrus.Infof("收到的数据：%v\n", recv)
+		id := string(buf[:n])
+		logrus.Infof("收到的数据：%v\n", id)
+
+		registerData, err := storePeers(id, conn.RemoteAddr())
+		if err != nil {
+			return
+		}
 
 		// 将接受到的数据返回给客户端
-		_, err = conn.Write([]byte("ok"))
+		_, err = conn.Write(registerData)
 		if err != nil {
 			logrus.Errorf("write from conn failed, err:%v\n", err)
 			break
 		}
 	}
+}
+
+func storePeers(id string, addr net.Addr) (registerData []byte, err error) {
+	//保存到服务器节点列表
+	peersMap.Store(id, map[string]string{
+		addr.Network(): addr.String(),
+	})
+
+	//将节点信息读取到一个map中
+	peers := map[string]map[string]string{}
+	peersMap.Range(func(k interface{}, v interface{}) bool {
+		peers[k.(string)] = v.(map[string]string)
+		return true
+	})
+
+	registerData, err = json.Marshal(peers)
+	if err != nil {
+		logrus.Errorf("response data error:%v\n", err)
+		return
+	}
+
+	return
 }
