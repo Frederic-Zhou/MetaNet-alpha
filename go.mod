@@ -5,6 +5,7 @@ go 1.17
 require (
 	github.com/hashicorp/mdns v1.0.5
 	github.com/hashicorp/memberlist v0.3.0
+	github.com/libp2p/go-reuseport v0.1.0
 	github.com/sirupsen/logrus v1.8.1
 	github.com/syndtr/goleveldb v1.0.1-0.20200815110645-5c35d600f0ca
 )
@@ -34,6 +35,5 @@ require (
 	github.com/hashicorp/go-uuid v1.0.1 // indirect
 	github.com/onsi/ginkgo v1.16.4 // indirect
 	github.com/onsi/gomega v1.16.0 // indirect
-	github.com/stretchr/testify v1.7.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
