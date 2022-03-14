@@ -16,7 +16,7 @@ var dialer net.Conn
 var listenerUDP net.PacketConn
 var listenerTCP net.Listener
 var clientID = []byte("ABCD")
-var svcAddr = "0.0.0.0:9998"
+var svcAddr = "1.14.102.100:9998"
 var localAddr = "0.0.0.0:9999"
 
 //向服务器发出请求，会返回服务器上的列表清单
@@ -252,6 +252,7 @@ func udpRun() {
 func tcpRun() {
 
 	//1.与服务器通信，并获得
+	logrus.Infoln("开始TCP")
 	peers, err := tcpRegister(localAddr, svcAddr)
 	if err != nil {
 		logrus.Errorf("%v\n", err)

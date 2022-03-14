@@ -94,30 +94,33 @@ func process(conn net.Conn) {
 	defer conn.Close()
 
 	// 针对当前连接做发送和接受操作
-	for {
-		reader := bufio.NewReader(conn)
-		var buf [512]byte
-		n, err := reader.Read(buf[:])
-		if err != nil {
-			logrus.Errorf("read from conn failed, err:%v\n", err)
-			break
-		}
-
-		id := string(buf[:n])
-		logrus.Infof("收到的数据：%v\n", id)
-
-		registerData, err := storePeers(id, conn.RemoteAddr())
-		if err != nil {
-			return
-		}
-
-		// 将接受到的数据返回给客户端
-		_, err = conn.Write(registerData)
-		if err != nil {
-			logrus.Errorf("write from conn failed, err:%v\n", err)
-			break
-		}
+	// for {
+	reader := bufio.NewReader(conn)
+	var buf [512]byte
+	n, err := reader.Read(buf[:])
+	if err != nil {
+		logrus.Errorf("read from conn failed, err:%v\n", err)
+		return
+		// break
 	}
+
+	id := string(buf[:n])
+	logrus.Infof("收到的数据：%v\n", id)
+
+	registerData, err := storePeers(id, conn.RemoteAddr())
+	if err != nil {
+		logrus.Errorf("storePeers failed, err:%v\n", err)
+		return
+	}
+
+	// 将接受到的数据返回给客户端
+	_, err = conn.Write(registerData)
+	if err != nil {
+		logrus.Errorf("write from conn failed, err:%v\n", err)
+		return
+		// break
+	}
+	// }
 }
 
 func storePeers(id string, addr net.Addr) (registerData []byte, err error) {
