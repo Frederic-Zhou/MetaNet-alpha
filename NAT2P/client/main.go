@@ -1,27 +1,23 @@
 package main
 
-import "github.com/sirupsen/logrus"
+import (
+	"bufio"
+	"bytes"
+	"os"
 
-const reply2peer = "ok"
-
-var clientID = []byte("ABCD")
-var svcAddr = "0.0.0.0:9998"
-var localAddr = "0.0.0.0:9999"
+	"github.com/Frederic-Zhou/MetaNet-alpha/NAT2P/client/network"
+)
 
 func main() {
 
-	peers, err := tcpRegister(localAddr, svcAddr)
-	if err != nil {
-		logrus.Errorf("%v\n", err)
-		return
-	}
-	logrus.Infof("TCP注册返回消息: %v | %v\n", peers, err)
+	//network.Register("ZETA", "0.0.0.0:9999", "0.0.0.0:9998")
 
-	peers2, err2 := udpRegister(localAddr, svcAddr)
-	if err2 != nil {
-		logrus.Errorf("%v\n", err2)
-		return
+	go network.Listern("0.0.0.0:9999")
+
+	scanner := bufio.NewScanner(os.Stdin)
+	for scanner.Scan() {
+
+		network.Sender(bytes.NewReader(scanner.Bytes()), "0.0.0.0:9997", "0.0.0.0:9999")
 	}
-	logrus.Infof("UDP注册返回消息: %v | %v\n", peers2, err2)
 
 }

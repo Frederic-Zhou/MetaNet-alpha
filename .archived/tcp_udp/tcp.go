@@ -1,4 +1,4 @@
-package main
+package demo
 
 import (
 	"bufio"
@@ -9,6 +9,12 @@ import (
 	reuse "github.com/libp2p/go-reuseport"
 	"github.com/sirupsen/logrus"
 )
+
+var clientID = []byte("ABCD")
+var svcAddr = "1.14.102.100:9998"
+var localAddr = "0.0.0.0:9999"
+
+const reply2peer = "ok"
 
 func tcpRegister(laddr, raddr string) (peers map[string]map[string]string, err error) {
 	var dialer net.Conn
