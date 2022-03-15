@@ -121,7 +121,7 @@ func process(conn net.Conn) {
 			// return
 			break
 		}
-
+		logrus.Infof("registerData:%s\n", string(registerData))
 		break //**目前的场景只做一次通信即关闭
 	}
 }
