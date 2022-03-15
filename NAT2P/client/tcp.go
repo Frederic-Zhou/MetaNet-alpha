@@ -11,6 +11,7 @@ import (
 )
 
 func tcpRegister(laddr, raddr string) (peers map[string]map[string]string, err error) {
+	var dialer net.Conn
 	dialer, err = reuse.Dial("tcp", laddr, raddr)
 	if err != nil {
 		logrus.Errorf("连接服务器(%s)错误:%v\n", raddr, err)
@@ -47,6 +48,7 @@ func tcpListen4Peers(laddr string) (err error) {
 
 	logrus.Infof("TCP监听本地 %v\n", laddr)
 	// 建立 udp 服务器
+	var listenerTCP net.Listener
 	listenerTCP, err = reuse.Listen("tcp", laddr)
 	if err != nil {
 		logrus.Errorf("TCP监听创建失败: %v\n", err)
@@ -95,6 +97,7 @@ func tcpListen4Peers(laddr string) (err error) {
 func tcpSendData2Peer(data []byte, laddr, raddr string) (err error) {
 
 	logrus.Infof("向peer发送数据 \"%d 字节\" %s -> %s \n", len(data), laddr, raddr)
+	var dialer net.Conn
 	dialer, err = reuse.Dial("tcp", laddr, raddr)
 	if err != nil {
 		logrus.Errorf("2listen tcp server error:%v\n", err)

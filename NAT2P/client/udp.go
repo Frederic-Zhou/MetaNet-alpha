@@ -11,6 +11,7 @@ import (
 
 //向服务器发出请求，会返回服务器上的列表清单
 func udpRegister(laddr, raddr string) (peers map[string]map[string]string, err error) {
+	var dialer net.Conn
 	dialer, err = reuse.Dial("udp", laddr, raddr)
 	if err != nil {
 		logrus.Errorf("连接服务器(%s)错误:%v\n", raddr, err)
@@ -47,6 +48,7 @@ func udpListen4Peers(laddr string) (err error) {
 
 	logrus.Infof("UDP监听本地 %v\n", laddr)
 	// 建立 udp 服务器
+	var listenerUDP net.PacketConn
 	listenerUDP, err = reuse.ListenPacket("udp", laddr)
 	if err != nil {
 		logrus.Errorf("UDP监听创建失败: %v\n", err)
@@ -86,6 +88,7 @@ func udpListen4Peers(laddr string) (err error) {
 func udpSendmsg2Peer(msg string, laddr, raddr string) (err error) {
 
 	logrus.Infof("向peer发送数据 \"%s\" %s -> %s \n", msg, laddr, raddr)
+	var dialer net.Conn
 	dialer, err = reuse.Dial("udp", laddr, raddr)
 	if err != nil {
 		logrus.Errorf("2listen udp server error:%v\n", err)
