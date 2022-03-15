@@ -8,9 +8,7 @@ import (
 
 func TestDataFormat(t *testing.T) {
 
-	var group = make([]byte, 4)
-	var index = make([]byte, 4)
-	var check = make([]byte, 1)
+	var group, index, check []byte
 
 	data := []byte("1")
 
