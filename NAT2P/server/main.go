@@ -12,6 +12,8 @@ import (
 var peersMap = sync.Map{}
 var port = 9998
 
+type peerType = map[string]string
+
 func main() {
 
 	go udpServer()
@@ -128,14 +130,19 @@ func process(conn net.Conn) {
 
 func storePeers(id string, addr net.Addr) (registerData []byte, err error) {
 	//保存到服务器节点列表
-	peersMap.Store(id, map[string]string{
-		addr.Network(): addr.String(),
-	})
+	peer, ok := peersMap.Load(id)
+	if !ok {
+		peer = peerType{}
+	}
+
+	peer.(peerType)[addr.Network()] = addr.String()
+
+	peersMap.Store(id, peer)
 
 	//将节点信息读取到一个map中
-	peers := map[string]map[string]string{}
+	peers := map[string]peerType{}
 	peersMap.Range(func(k interface{}, v interface{}) bool {
-		peers[k.(string)] = v.(map[string]string)
+		peers[k.(string)] = v.(peerType)
 		return true
 	})
 
