@@ -5,18 +5,28 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"os"
 	"sync"
 
 	"github.com/Frederic-Zhou/MetaNet-alpha/NAT2P/client/utils"
 	reuse "github.com/libp2p/go-reuseport"
 	"github.com/sirupsen/logrus"
+	"github.com/syndtr/goleveldb/leveldb"
 )
 
 var MAXSENDSIZE = 16
 var SENDID uint32 = 0
 var sendIDMutex sync.Mutex
 
-var sendBlocks sync.Map
+var sendBlocks *leveldb.DB
+
+func init() {
+	var err error
+	sendBlocks, err = leveldb.OpenFile("./sendCache", nil)
+	if err != nil {
+		os.Exit(4)
+	}
+}
 
 func getSendID() uint32 {
 	sendIDMutex.Lock()
@@ -60,8 +70,13 @@ func udpSender(reader io.Reader, laddr, raddr string) (err error) {
 		binary.LittleEndian.PutUint32(checkbytes, check)
 
 		//保存到发送列表
-
-		sendBlocks.Store(fmt.Sprintf("%s %d %d", raddr, id, seq), block)
+		// go sendBlocks.Store(fmt.Sprintf("%s %d %d", raddr, id, seq), block)
+		go func() {
+			err := sendBlocks.Put([]byte(fmt.Sprintf("%s %d %d", raddr, id, seq)), block, nil)
+			if err != nil {
+				logrus.Errorf("write to cache:%v", err)
+			}
+		}()
 
 		block = append(idbytes, append(seqbytes, append(checkbytes, block...)...)...)
 

@@ -4,15 +4,24 @@ import (
 	"encoding/binary"
 	"fmt"
 	"net"
-	"sync"
+	"os"
 
 	"github.com/Frederic-Zhou/MetaNet-alpha/NAT2P/client/utils"
 	reuse "github.com/libp2p/go-reuseport"
 	"github.com/sirupsen/logrus"
+	"github.com/syndtr/goleveldb/leveldb"
 )
 
 var MAXRECEIVESIZE = MAXSENDSIZE + 12 //4位ID+4位序号+4位校验=12，所以接收端收到的每个块会多12位
-var receiveBlocks sync.Map
+var receiveBlocks *leveldb.DB
+
+func init() {
+	var err error
+	receiveBlocks, err = leveldb.OpenFile("./receiveCache", nil)
+	if err != nil {
+		os.Exit(4)
+	}
+}
 
 func udpListen4Peers(laddr string) (err error) {
 
@@ -59,7 +68,13 @@ func udpListen4Peers(laddr string) (err error) {
 			logrus.Infof("收到结束消息 %v,%v", seq, maxseq)
 		}
 
-		receiveBlocks.Store(fmt.Sprintf("%s %d %d", raddr.String(), id, seq), block)
+		// go receiveBlocks.Store(fmt.Sprintf("%s %d %d", raddr.String(), id, seq), block)
+		go func() {
+			receiveBlocks.Put([]byte(fmt.Sprintf("%s %d %d", raddr.String(), id, seq)), block, nil)
+			if err != nil {
+				logrus.Errorf("write to cache:%v", err)
+			}
+		}()
 
 		logrus.Infof("来源:%v > %d %d %d %v", raddr, id, seq, check, block)
 
