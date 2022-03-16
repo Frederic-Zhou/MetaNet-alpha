@@ -4,26 +4,31 @@ import (
 	"encoding/binary"
 	"fmt"
 	"testing"
+
+	"github.com/Frederic-Zhou/MetaNet-alpha/NAT2P/client/utils"
 )
 
 func TestDataFormat(t *testing.T) {
 
-	var group, index, check []byte
+	var id = make([]byte, 4)
+	var seq = make([]byte, 4)
+	var check = make([]byte, 4)
 
 	data := []byte("1")
 
-	groupNum := CRC32(data)
-	binary.LittleEndian.PutUint32(group, groupNum)
+	idNum := uint32(123)
+	binary.LittleEndian.PutUint32(id, idNum)
 
 	indexNum := uint32(123)
-	binary.LittleEndian.PutUint32(index, indexNum)
+	binary.LittleEndian.PutUint32(seq, indexNum)
 
-	check = MD5bytes(data)
+	checkNum := utils.CRC32(data)
+	binary.LittleEndian.PutUint32(check, checkNum)
 
-	data = append(group, data...)
-	data = append(index, data...)
+	data = append(id, data...)
+	data = append(seq, data...)
 	data = append(check, data...)
 
-	fmt.Println(groupNum, data, len(group), len(index), len(check), len(data))
+	fmt.Println(data, len(id), len(seq), len(check), len(data))
 
 }

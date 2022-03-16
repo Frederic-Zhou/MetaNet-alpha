@@ -3,6 +3,7 @@ module github.com/Frederic-Zhou/MetaNet-alpha
 go 1.17
 
 require (
+	github.com/google/uuid v1.3.0
 	github.com/hashicorp/mdns v1.0.5
 	github.com/hashicorp/memberlist v0.3.0
 	github.com/libp2p/go-reuseport v0.1.0

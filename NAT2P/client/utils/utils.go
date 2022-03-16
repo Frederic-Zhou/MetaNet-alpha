@@ -1,9 +1,11 @@
-package network
+package utils
 
 import (
 	"crypto/md5"
 	"crypto/sha1"
 	"hash/crc32"
+
+	"github.com/google/uuid"
 )
 
 // 生成md5
@@ -24,4 +26,8 @@ func SHA1(data []byte) []byte {
 
 func CRC32(data []byte) uint32 {
 	return crc32.ChecksumIEEE(data)
+}
+
+func UUID() string {
+	return uuid.New().String()
 }
