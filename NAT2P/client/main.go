@@ -12,12 +12,15 @@ func main() {
 
 	//network.Register("ZETA", "0.0.0.0:9999", "0.0.0.0:9998")
 
-	go network.Listern("0.0.0.0:9999")
+	go network.Listener("0.0.0.0:9999")
 
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
 
-		network.Sender(bytes.NewReader(scanner.Bytes()), "0.0.0.0:9997", "0.0.0.0:9999")
+		network.Sender(bytes.NewReader(scanner.Bytes()),
+			network.DataType_Text,
+			"0.0.0.0:9999",
+			"0.0.0.0:9998")
 	}
 
 }

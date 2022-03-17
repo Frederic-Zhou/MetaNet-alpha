@@ -18,11 +18,27 @@ var MAXSENDSIZE = 16
 var SENDID uint32 = 0
 var sendIDMutex sync.Mutex
 
-var sendBlocks *leveldb.DB
+var sendCache *leveldb.DB
+
+type DataType = uint32
+
+const (
+	DataType_Success DataType = 0
+	DataType_Text    DataType = 1
+	DataType_File    DataType = 2
+	DataType_Image   DataType = 3
+	DataType_Flow    DataType = 4
+)
 
 func init() {
 	var err error
-	sendBlocks, err = leveldb.OpenFile("./sendCache", nil)
+	var cachePath = "./sendCache"
+	err = os.RemoveAll(cachePath)
+	if err != nil {
+		logrus.Errorln(err)
+		os.Exit(4)
+	}
+	sendCache, err = leveldb.OpenFile(cachePath, nil)
 	if err != nil {
 		os.Exit(4)
 	}
@@ -35,7 +51,7 @@ func getSendID() uint32 {
 	return SENDID
 }
 
-func udpSender(reader io.Reader, laddr, raddr string) (err error) {
+func udpSender(reader io.Reader, datatype DataType, laddr, raddr string) (err error) {
 
 	logrus.Infof("向peer发送数据  %s -> %s \n", laddr, raddr)
 	var dialer net.Conn
@@ -52,11 +68,19 @@ func udpSender(reader io.Reader, laddr, raddr string) (err error) {
 
 		var block = make([]byte, MAXSENDSIZE)
 		var n = 0
-		if n, err = reader.Read(block); n == 0 {
-			logrus.Errorf("%v||%v", n, err)
+		//如何读取完成或者**发送的是成功回报** ，那么发送seq=0，代表结束数据，不会有后续内容了
+		if n, err = reader.Read(block); n == 0 || datatype == DataType_Success {
+			logrus.Errorf("%v||%v||%v", n, err, datatype)
 			//读取完所有的内容，此时发送一个核对清单给接收端
-			//核对信息是有效块的最大序号
-			binary.LittleEndian.PutUint32(block, seq)
+			//核对信息是有效块的最大序号 *10 + 发送类型
+			//如果是**成功回报** 正常发送
+			if datatype == DataType_Success {
+				//成功回报，将sql替换为要回报sendid
+				binary.LittleEndian.PutUint32(block, genLastseqAndDataType(binary.LittleEndian.Uint32(block), datatype))
+			} else {
+				binary.LittleEndian.PutUint32(block, genLastseqAndDataType(seq, datatype))
+			}
+
 			seq = 0
 		} else {
 			seq++
@@ -69,14 +93,15 @@ func udpSender(reader io.Reader, laddr, raddr string) (err error) {
 		binary.LittleEndian.PutUint32(seqbytes, seq)
 		binary.LittleEndian.PutUint32(checkbytes, check)
 
-		//保存到发送列表
-		// go sendBlocks.Store(fmt.Sprintf("%s %d %d", raddr, id, seq), block)
-		go func() {
-			err := sendBlocks.Put([]byte(fmt.Sprintf("%s %d %d", raddr, id, seq)), block, nil)
-			if err != nil {
-				logrus.Errorf("write to cache:%v", err)
-			}
-		}()
+		if datatype != DataType_Success {
+			//如果发送的不是成功的回报，保存到发送列表
+			go func() {
+				err := sendCache.Put([]byte(fmt.Sprintf("%s-%d-%d", raddr, id, seq)), block, nil)
+				if err != nil {
+					logrus.Errorf("write to cache:%v", err)
+				}
+			}()
+		}
 
 		block = append(idbytes, append(seqbytes, append(checkbytes, block...)...)...)
 
@@ -89,7 +114,7 @@ func udpSender(reader io.Reader, laddr, raddr string) (err error) {
 
 		logrus.Infoln(">", id, seq, check, block)
 
-		if n == 0 {
+		if seq == 0 {
 			logrus.Warnln("消息发送完成")
 			return
 		}
@@ -97,6 +122,10 @@ func udpSender(reader io.Reader, laddr, raddr string) (err error) {
 
 }
 
-func Sender(reader io.Reader, laddr, raddr string) (err error) {
-	return udpSender(reader, laddr, raddr)
+func genLastseqAndDataType(lastseq, datatype uint32) uint32 {
+	return lastseq*10 + datatype
+}
+
+func Sender(reader io.Reader, datatype DataType, laddr, raddr string) (err error) {
+	return udpSender(reader, datatype, laddr, raddr)
 }
