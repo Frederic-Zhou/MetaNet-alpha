@@ -14,7 +14,7 @@ import (
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
-var BLOCKSIZE = 16
+var BLOCKSIZE = 32
 var SENDID uint32 = 0
 var sendIDMutex sync.Mutex
 
@@ -70,15 +70,20 @@ func udpSender(reader io.Reader, datatype DataType, laddr, raddr string) (err er
 		var n = 0
 		//如何读取完成或者**发送的是成功回报** ，那么发送seq=0，代表结束数据，不会有后续内容了
 		if n, err = reader.Read(block); n == 0 || datatype == DataType_Success {
-			logrus.Errorf("%v||%v||%v", n, err, datatype)
+			logrus.Errorf("读取: %v, 错误: %v, 数据类型: %v", n, err, datatype)
 			//读取完所有的内容，此时发送一个核对清单给接收端
 			//核对信息是有效块的最大序号 *10 + 发送类型
 			//如果是**成功回报** 正常发送
-			if datatype == DataType_Success {
-				//成功回报，将sql替换为要回报sendid
-				binary.LittleEndian.PutUint32(block, genLastseqAndDataType(binary.LittleEndian.Uint32(block), datatype))
-			} else {
-				binary.LittleEndian.PutUint32(block, genLastseqAndDataType(seq, datatype))
+			switch datatype {
+			case DataType_Success:
+				//成功回报
+				block = genEndInfo(0, DataType_Success, block[:])
+			case DataType_Text:
+				//消息发送结束
+				block = genEndInfo(seq, datatype, []byte{})
+
+			case DataType_File, DataType_Image:
+
 			}
 
 			seq = 0
@@ -94,7 +99,7 @@ func udpSender(reader io.Reader, datatype DataType, laddr, raddr string) (err er
 		binary.LittleEndian.PutUint32(checkbytes, check)
 
 		if datatype != DataType_Success {
-			//如果发送的不是成功的回报，保存到发送列表
+			//如果发送的不是成功回报，保存到发送列表
 			go func() {
 				err := sendCache.Put([]byte(fmt.Sprintf("%s-%d-%d", raddr, id, seq)), block, nil)
 				if err != nil {
@@ -120,10 +125,6 @@ func udpSender(reader io.Reader, datatype DataType, laddr, raddr string) (err er
 		}
 	}
 
-}
-
-func genLastseqAndDataType(lastseq, datatype uint32) uint32 {
-	return lastseq*10 + datatype
 }
 
 func Sender(reader io.Reader, datatype DataType, laddr, raddr string) (err error) {
