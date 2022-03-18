@@ -77,10 +77,10 @@ func udpSender(reader io.Reader, datatype DataType, laddr, raddr string) (err er
 			switch datatype {
 			case DataType_Success:
 				//成功回报
-				block = genEndInfo(0, DataType_Success, block[:])
+				copy(block, genEndInfo(0, DataType_Success, block[:]))
 			case DataType_Text:
 				//消息发送结束
-				block = genEndInfo(seq, datatype, []byte{})
+				copy(block, genEndInfo(seq, datatype, []byte{}))
 
 			case DataType_File, DataType_Image:
 

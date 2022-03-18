@@ -203,10 +203,7 @@ func genEndInfo(lastseq, datatype uint32, endinfo []byte) []byte {
 	binary.LittleEndian.PutUint32(lastseqByte, lastseq)
 	binary.LittleEndian.PutUint32(datatypeByte, datatype)
 
-	var block = make([]byte, BLOCKSIZE)
-	blockReader := bytes.NewReader(append(lastseqByte, append(datatypeByte, endinfo...)...))
-	_, _ = blockReader.Read(block)
-	return block
+	return append(lastseqByte, append(datatypeByte, endinfo...)...)
 }
 
 func parseEndInfo(block []byte) (lastseq, datatype uint32, endinfo []byte) {
