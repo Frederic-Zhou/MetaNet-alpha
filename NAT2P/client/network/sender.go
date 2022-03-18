@@ -14,7 +14,7 @@ import (
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
-var MAXSENDSIZE = 16
+var BLOCKSIZE = 16
 var SENDID uint32 = 0
 var sendIDMutex sync.Mutex
 
@@ -52,8 +52,8 @@ func getSendID() uint32 {
 }
 
 func udpSender(reader io.Reader, datatype DataType, laddr, raddr string) (err error) {
-
 	logrus.Infof("向peer发送数据  %s -> %s \n", laddr, raddr)
+
 	var dialer net.Conn
 	dialer, err = reuse.Dial("udp", laddr, raddr)
 	if err != nil {
@@ -66,7 +66,7 @@ func udpSender(reader io.Reader, datatype DataType, laddr, raddr string) (err er
 
 	for {
 
-		var block = make([]byte, MAXSENDSIZE)
+		var block = make([]byte, BLOCKSIZE)
 		var n = 0
 		//如何读取完成或者**发送的是成功回报** ，那么发送seq=0，代表结束数据，不会有后续内容了
 		if n, err = reader.Read(block); n == 0 || datatype == DataType_Success {
@@ -103,16 +103,16 @@ func udpSender(reader io.Reader, datatype DataType, laddr, raddr string) (err er
 			}()
 		}
 
-		block = append(idbytes, append(seqbytes, append(checkbytes, block...)...)...)
+		pkg := append(idbytes, append(seqbytes, append(checkbytes, block...)...)...)
 
 		// 发送数据
-		_, err = dialer.Write(block) // 发送数据
+		_, err = dialer.Write(pkg) // 发送数据
 		if err != nil {
 			logrus.Errorf("To peer 发送数据失败: %v\n", err)
 			return
 		}
 
-		logrus.Infoln(">", id, seq, check, block)
+		logrus.Infoln(">", id, seq, check, pkg)
 
 		if seq == 0 {
 			logrus.Warnln("消息发送完成")

@@ -16,7 +16,7 @@ import (
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
-var MAXRECEIVESIZE = MAXSENDSIZE + 12 //4位ID+4位序号+4位校验=12，所以接收端收到的每个块会多12位
+var PKGSIZE = BLOCKSIZE + 12 //4位ID+4位序号+4位校验=12，所以接收端收到的每个块会多12位
 var receiveCache *leveldb.DB
 
 func init() {
@@ -49,21 +49,21 @@ func udpListen4Peers(laddr string) (err error) {
 	for {
 
 		// 接收数据
-		var block = make([]byte, MAXRECEIVESIZE)
+		var pkg = make([]byte, PKGSIZE)
 		var raddr net.Addr
 
-		_, raddr, err = listenerUDP.ReadFrom(block)
+		_, raddr, err = listenerUDP.ReadFrom(pkg)
 		if err != nil {
 			logrus.Errorf("读取数据错误:%v\n", err)
 			return
 		}
 
-		var idbytes, seqbytes, checkbytes = make([]byte, 4), make([]byte, 4), make([]byte, 4)
+		var idbytes, seqbytes, checkbytes, block = make([]byte, 4), make([]byte, 4), make([]byte, 4), []byte{}
 
-		idbytes = block[:4]
-		seqbytes = block[4:8]
-		checkbytes = block[8:12]
-		block = block[12:]
+		idbytes = pkg[:4]
+		seqbytes = pkg[4:8]
+		checkbytes = pkg[8:12]
+		block = pkg[12:]
 
 		id := binary.LittleEndian.Uint32(idbytes)
 		seq := binary.LittleEndian.Uint32(seqbytes)
@@ -95,23 +95,17 @@ func udpListen4Peers(laddr string) (err error) {
 }
 
 func fetchReceiveCache(raddr string, sendid, lastseq, datatype uint32) {
-	time.Sleep(2 * time.Second)
+	time.Sleep(1 * time.Second)
 	logrus.Infoln("fetch:", fmt.Sprintf("%s-%d", raddr, sendid))
-	iter := receiveCache.NewIterator(
-		&util.Range{
-			Start: []byte(fmt.Sprintf("%s-%d-%d", raddr, sendid, 1)),
-			Limit: []byte(fmt.Sprintf("%s-%d-%d", raddr, sendid, lastseq+1)),
-		},
-		nil)
-	iter2 := receiveCache.NewIterator(
-		&util.Range{
-			Start: []byte(fmt.Sprintf("%s-%d-%d", raddr, sendid, 1)),
-			Limit: []byte(fmt.Sprintf("%s-%d-%d", raddr, sendid, lastseq+1)),
-		},
-		nil)
-	//检查完整性
 
-	if err := checkCache(iter2, lastseq); err != nil && datatype != DataType_Success {
+	iterRange := &util.Range{
+		Start: []byte(fmt.Sprintf("%s-%d-%d", raddr, sendid, 1)),
+		Limit: []byte(fmt.Sprintf("%s-%d-%d", raddr, sendid, lastseq+1)),
+	}
+	iter := receiveCache.NewIterator(iterRange, nil)
+
+	//检查完整性
+	if err := checkCache(receiveCache.NewIterator(iterRange, nil), lastseq); err != nil && datatype != DataType_Success {
 		logrus.Errorln(err)
 		return
 	}
@@ -155,7 +149,7 @@ func fetchReceiveCache(raddr string, sendid, lastseq, datatype uint32) {
 		var sendidbyte = make([]byte, 4)
 		binary.LittleEndian.PutUint32(sendidbyte, sendid)
 		Sender(bytes.NewReader(sendidbyte), DataType_Success, "0.0.0.0:9997", raddr)
-		logrus.Infof("发送成功消息:%v > %v\n", sendidbyte, raddr)
+		logrus.Infof("发送成功回报:%v > %v\n", sendidbyte, raddr)
 
 	case DataType_File:
 
