@@ -23,11 +23,10 @@ var sendCache *leveldb.DB
 type DataType = uint32
 
 const (
-	DataType_Success DataType = 0
-	DataType_Text    DataType = 1
-	DataType_File    DataType = 2
-	DataType_Image   DataType = 3
-	DataType_Flow    DataType = 4
+	DataType_Reply DataType = 0
+	DataType_Text  DataType = 1
+	DataType_File  DataType = 2
+	DataType_Flow  DataType = 3
 )
 
 func init() {
@@ -69,20 +68,20 @@ func udpSender(reader io.Reader, datatype DataType, laddr, raddr string) (err er
 		var block = make([]byte, BLOCKSIZE)
 		var n = 0
 		//如何读取完成或者**发送的是成功回报** ，那么发送seq=0，代表结束数据，不会有后续内容了
-		if n, err = reader.Read(block); n == 0 || datatype == DataType_Success {
+		if n, err = reader.Read(block); n == 0 || datatype == DataType_Reply {
 			logrus.Errorf("读取: %v, 错误: %v, 数据类型: %v", n, err, datatype)
 			//读取完所有的内容，此时发送一个核对清单给接收端
 			//核对信息是有效块的最大序号 *10 + 发送类型
 			//如果是**成功回报** 正常发送
 			switch datatype {
-			case DataType_Success:
+			case DataType_Reply:
 				//成功回报
-				copy(block, genEndInfo(0, DataType_Success, block[:]))
+				copy(block, genEndInfo(seq, datatype, block[:]))
 			case DataType_Text:
 				//消息发送结束
 				copy(block, genEndInfo(seq, datatype, []byte{}))
 
-			case DataType_File, DataType_Image:
+			case DataType_File:
 
 			}
 
@@ -98,16 +97,6 @@ func udpSender(reader io.Reader, datatype DataType, laddr, raddr string) (err er
 		binary.LittleEndian.PutUint32(seqbytes, seq)
 		binary.LittleEndian.PutUint32(checkbytes, check)
 
-		if datatype != DataType_Success {
-			//如果发送的不是成功回报，保存到发送列表
-			go func() {
-				err := sendCache.Put([]byte(fmt.Sprintf("%s-%d-%d", raddr, id, seq)), block, nil)
-				if err != nil {
-					logrus.Errorf("write to cache:%v", err)
-				}
-			}()
-		}
-
 		pkg := append(idbytes, append(seqbytes, append(checkbytes, block...)...)...)
 
 		// 发送数据
@@ -117,12 +106,20 @@ func udpSender(reader io.Reader, datatype DataType, laddr, raddr string) (err er
 			return
 		}
 
-		logrus.Infoln(">", id, seq, check, pkg)
-
-		if seq == 0 {
+		if seq != 0 {
+			//如果发送的不是成功回报，保存到发送列表
+			go func() {
+				err := sendCache.Put([]byte(fmt.Sprintf("%s-%d-%d", raddr, id, seq)), block, nil)
+				if err != nil {
+					logrus.Errorf("write to cache:%v", err)
+				}
+			}()
+		} else {
 			logrus.Warnln("消息发送完成")
 			return
 		}
+
+		logrus.Infoln(">", id, seq, check, pkg)
 	}
 
 }

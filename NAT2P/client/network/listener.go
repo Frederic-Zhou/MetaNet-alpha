@@ -95,7 +95,7 @@ func udpListen4Peers(laddr string) (err error) {
 
 func fetchReceiveCache(raddr string, sendid, lastseq, datatype uint32, endInfo []byte) {
 
-	if datatype == DataType_Success {
+	if datatype == DataType_Reply {
 		handleSendSuccess(binary.LittleEndian.Uint32(endInfo), raddr)
 		return
 	}
@@ -128,7 +128,7 @@ func fetchReceiveCache(raddr string, sendid, lastseq, datatype uint32, endInfo [
 func sendSuccess(sendid uint32, raddr string) {
 	var sendidbyte = make([]byte, 4)
 	binary.LittleEndian.PutUint32(sendidbyte, sendid)
-	go Sender(bytes.NewReader(sendidbyte), DataType_Success, LADDR, raddr)
+	go Sender(bytes.NewReader(sendidbyte), DataType_Reply, LADDR, raddr)
 	logrus.Infof("发送成功回报:%v > %v\n", sendidbyte, raddr)
 }
 
