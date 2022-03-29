@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/Frederic-Zhou/MetaNet-alpha/NAT2P/client/utils"
+	"github.com/Frederic-Zhou/MetaNet-alpha/NAT2P/utils"
 )
 
 func TestDataFormat(t *testing.T) {

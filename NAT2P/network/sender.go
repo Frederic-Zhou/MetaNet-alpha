@@ -8,7 +8,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/Frederic-Zhou/MetaNet-alpha/NAT2P/client/utils"
+	"github.com/Frederic-Zhou/MetaNet-alpha/NAT2P/utils"
 	reuse "github.com/libp2p/go-reuseport"
 	"github.com/sirupsen/logrus"
 	"github.com/syndtr/goleveldb/leveldb"

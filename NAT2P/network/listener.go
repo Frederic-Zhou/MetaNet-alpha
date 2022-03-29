@@ -8,7 +8,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/Frederic-Zhou/MetaNet-alpha/NAT2P/client/utils"
+	"github.com/Frederic-Zhou/MetaNet-alpha/NAT2P/utils"
 	reuse "github.com/libp2p/go-reuseport"
 	"github.com/sirupsen/logrus"
 	"github.com/syndtr/goleveldb/leveldb"
@@ -18,6 +18,12 @@ import (
 var PKGSIZE = BLOCKSIZE + 12 //4位ID+4位序号+4位校验=12，所以接收端收到的每个块会多12位
 var receiveCache *leveldb.DB
 var LADDR = ""
+var EventsChan = make(chan Event, 50)
+
+type Event struct {
+	DataType DataType
+	Body     interface{}
+}
 
 func init() {
 	var err error
@@ -96,7 +102,7 @@ func udpListen4Peers(laddr string) (err error) {
 func fetchReceiveCache(raddr string, sendid, lastseq, datatype uint32, endInfo []byte) {
 
 	if datatype == DataType_Reply {
-		handleSendSuccess(binary.LittleEndian.Uint32(endInfo), raddr)
+		handleSuccessReply(binary.LittleEndian.Uint32(endInfo), raddr)
 		return
 	}
 
@@ -107,7 +113,7 @@ func fetchReceiveCache(raddr string, sendid, lastseq, datatype uint32, endInfo [
 	}
 	logrus.Infoln("fetch:", fmt.Sprintf("%s-%d", raddr, sendid))
 
-	defer sendSuccess(sendid, raddr) //发送成功回复给发送方
+	defer sendSuccessReply(sendid, raddr) //发送成功回复给发送方
 
 	//检查数据是否完整
 	if err := checkCache(iterRange, lastseq); err != nil {
@@ -118,14 +124,21 @@ func fetchReceiveCache(raddr string, sendid, lastseq, datatype uint32, endInfo [
 	//查询
 	switch datatype {
 	case DataType_Text:
-		_, _ = handleText(iterRange)
+		text, err := handleText(iterRange)
+		if err != nil {
+			logrus.Errorln(err)
+			return
+		}
+
+		EventsChan <- Event{DataType: DataType_Text, Body: text}
+
 	case DataType_File:
 
 	}
 
 }
 
-func sendSuccess(sendid uint32, raddr string) {
+func sendSuccessReply(sendid uint32, raddr string) {
 	var sendidbyte = make([]byte, 4)
 	binary.LittleEndian.PutUint32(sendidbyte, sendid)
 	go Sender(bytes.NewReader(sendidbyte), DataType_Reply, LADDR, raddr)
@@ -156,7 +169,7 @@ func handleText(iterRange *util.Range) (text string, err error) {
 	return
 }
 
-func handleSendSuccess(pkgInfo uint32, raddr string) {
+func handleSuccessReply(pkgInfo uint32, raddr string) {
 	logrus.Infoln("是成功回报")
 
 	successSendID := pkgInfo
