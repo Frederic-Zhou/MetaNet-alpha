@@ -18,11 +18,11 @@ import (
 var PKGSIZE = BLOCKSIZE + 12 //4位ID+4位序号+4位校验=12，所以接收端收到的每个块会多12位
 var receiveCache *leveldb.DB
 var LADDR = ""
-var EventsChan = make(chan Event, 50)
+var eventsChan = make(chan Event, 100)
 
 type Event struct {
-	DataType DataType
-	Body     interface{}
+	dataType DataType
+	body     []byte
 }
 
 func init() {
@@ -130,7 +130,7 @@ func fetchReceiveCache(raddr string, sendid, lastseq, datatype uint32, endInfo [
 			return
 		}
 
-		EventsChan <- Event{DataType: DataType_Text, Body: text}
+		eventsChan <- Event{dataType: DataType_Text, body: text}
 
 	case DataType_File:
 
@@ -145,20 +145,18 @@ func sendSuccessReply(sendid uint32, raddr string) {
 	logrus.Infof("发送成功回报:%v > %v\n", sendidbyte, raddr)
 }
 
-func handleText(iterRange *util.Range) (text string, err error) {
+func handleText(iterRange *util.Range) (fullData []byte, err error) {
 
 	iter := receiveCache.NewIterator(iterRange, nil)
 
 	//从缓存中读取数据到字节数组，并且删除数据
-	fullData := []byte{}
 	for iter.Next() {
 		value := iter.Value()
 		fullData = append(fullData, value...)
 		receiveCache.Delete(iter.Key(), nil)
 	}
 
-	text = string(fullData)
-	logrus.Infof("Text:%v\n", text)
+	logrus.Infof("Text:%v\n", string(fullData))
 
 	iter.Release()
 	if err = iter.Error(); err != nil {
@@ -230,4 +228,20 @@ func parseEndInfo(block []byte) (lastseq, datatype uint32, endinfo []byte) {
 func Listener(laddr string) (err error) {
 	LADDR = laddr
 	return udpListen4Peers(laddr)
+}
+
+func GetEvent() *Event {
+	select {
+	case e := <-eventsChan:
+		return &e
+	default:
+		return nil
+	}
+}
+
+func (e *Event) GetDataType() DataType {
+	return e.dataType
+}
+func (e *Event) GetBody() []byte {
+	return e.body
 }

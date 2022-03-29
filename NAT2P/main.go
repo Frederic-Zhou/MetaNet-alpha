@@ -6,7 +6,7 @@ import (
 	"flag"
 	"os"
 
-	"github.com/Frederic-Zhou/MetaNet-alpha/NAT2P/client/network"
+	"github.com/Frederic-Zhou/MetaNet-alpha/NAT2P/network"
 )
 
 func main() {
