@@ -13,10 +13,6 @@ type Msg struct {
 
 func (m Msg) Do(e *network.Event) (err error) {
 
-	if e.GetDataType() != network.DataType_Text {
-		return
-	}
-
 	err = json.Unmarshal(e.GetBody(), &m)
 	if err != nil {
 		return

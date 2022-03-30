@@ -23,6 +23,7 @@ var eventsChan = make(chan Event, 100)
 type Event struct {
 	dataType DataType
 	body     []byte
+	raddr    string
 }
 
 func init() {
@@ -101,24 +102,24 @@ func udpListen4Peers(laddr string) (err error) {
 
 func fetchReceiveCache(raddr string, sendid, lastseq, datatype uint32, endInfo []byte) {
 
-	if datatype == DataType_Reply {
-		handleSuccessReply(binary.LittleEndian.Uint32(endInfo), raddr)
-		return
-	}
+	var iterRange *util.Range
 
-	time.Sleep(1 * time.Second) // 临时举措
-	iterRange := &util.Range{
-		Start: []byte(fmt.Sprintf("%s-%d-%d", raddr, sendid, 1)),
-		Limit: []byte(fmt.Sprintf("%s-%d-%d", raddr, sendid, lastseq+1)),
-	}
-	logrus.Infoln("fetch:", fmt.Sprintf("%s-%d", raddr, sendid))
+	if datatype != DataType_Reply {
 
-	defer sendSuccessReply(sendid, raddr) //发送成功回复给发送方
+		time.Sleep(1 * time.Second) // 临时举措
+		iterRange = &util.Range{
+			Start: []byte(fmt.Sprintf("%s-%d-%d", raddr, sendid, 1)),
+			Limit: []byte(fmt.Sprintf("%s-%d-%d", raddr, sendid, lastseq+1)),
+		}
+		logrus.Infoln("fetch:", fmt.Sprintf("%s-%d", raddr, sendid))
 
-	//检查数据是否完整
-	if err := checkCache(iterRange, lastseq); err != nil {
-		logrus.Errorln(err)
-		return
+		defer sendSuccessReply(sendid, raddr) //发送成功回复给发送方
+
+		//检查数据是否完整
+		if err := checkCache(iterRange, lastseq); err != nil {
+			logrus.Errorln(err)
+			return
+		}
 	}
 
 	//查询
@@ -130,9 +131,16 @@ func fetchReceiveCache(raddr string, sendid, lastseq, datatype uint32, endInfo [
 			return
 		}
 
-		eventsChan <- Event{dataType: DataType_Text, body: text}
+		eventsChan <- Event{dataType: DataType_Text, body: text, raddr: raddr}
 
 	case DataType_File:
+
+	case DataType_Flow:
+
+	case DataType_Reply:
+
+		handleSuccessReply(binary.LittleEndian.Uint32(endInfo), raddr)
+		eventsChan <- Event{dataType: DataType_Reply, body: endInfo, raddr: raddr}
 
 	}
 
@@ -168,7 +176,7 @@ func handleText(iterRange *util.Range) (fullData []byte, err error) {
 }
 
 func handleSuccessReply(pkgInfo uint32, raddr string) {
-	logrus.Infoln("是成功回报")
+	logrus.Infoln("是成功回报,清理发送缓存")
 
 	successSendID := pkgInfo
 	delIter := sendCache.NewIterator(
@@ -244,4 +252,7 @@ func (e *Event) GetDataType() DataType {
 }
 func (e *Event) GetBody() []byte {
 	return e.body
+}
+func (e *Event) GetRemoteAddr() string {
+	return e.raddr
 }
