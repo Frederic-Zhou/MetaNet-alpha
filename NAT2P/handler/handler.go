@@ -1,25 +1,26 @@
 package handler
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/Frederic-Zhou/MetaNet-alpha/NAT2P/network"
 )
 
-type HandleFunc func(*network.Event) error
+type HandleFunc func(network.Event) error
 
 var txt_handlers []HandleFunc
 var file_handlers []HandleFunc
 var flow_handlers []HandleFunc
+var reply_handlers []HandleFunc
 var errLog []error
 
 func EventHandleLoop() {
 
 	for {
-		e := network.GetEvent()
-		fmt.Println(e)
-		if e != nil {
+
+		select {
+		case e := <-network.EventsChan:
+
 			var hs []HandleFunc
 
 			switch e.GetDataType() {
@@ -29,6 +30,8 @@ func EventHandleLoop() {
 				hs = file_handlers
 			case network.DataType_Flow:
 				hs = flow_handlers
+			case network.DataType_Reply:
+				hs = reply_handlers
 			}
 
 			go func() {
@@ -40,9 +43,10 @@ func EventHandleLoop() {
 				}
 			}()
 
-			continue
+		case <-time.After(time.Millisecond * 200):
+
 		}
-		time.Sleep(200 * time.Millisecond)
+
 	}
 }
 

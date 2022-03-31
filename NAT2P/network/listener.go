@@ -18,7 +18,7 @@ import (
 var PKGSIZE = BLOCKSIZE + 12 //4位ID+4位序号+4位校验=12，所以接收端收到的每个块会多12位
 var receiveCache *leveldb.DB
 var LADDR = ""
-var eventsChan = make(chan Event, 100)
+var EventsChan = make(chan Event, 100)
 
 type Event struct {
 	dataType DataType
@@ -131,7 +131,7 @@ func fetchReceiveCache(raddr string, sendid, lastseq, datatype uint32, endInfo [
 			return
 		}
 
-		eventsChan <- Event{dataType: DataType_Text, body: text, raddr: raddr}
+		EventsChan <- Event{dataType: DataType_Text, body: text, raddr: raddr}
 
 	case DataType_File:
 
@@ -140,7 +140,7 @@ func fetchReceiveCache(raddr string, sendid, lastseq, datatype uint32, endInfo [
 	case DataType_Reply:
 
 		handleSuccessReply(binary.LittleEndian.Uint32(endInfo), raddr)
-		eventsChan <- Event{dataType: DataType_Reply, body: endInfo, raddr: raddr}
+		EventsChan <- Event{dataType: DataType_Reply, body: endInfo, raddr: raddr}
 
 	}
 
@@ -238,14 +238,14 @@ func Listener(laddr string) (err error) {
 	return udpListen4Peers(laddr)
 }
 
-func GetEvent() *Event {
-	select {
-	case e := <-eventsChan:
-		return &e
-	default:
-		return nil
-	}
-}
+// func GetEvent() *Event {
+// 	select {
+// 	case e := <-eventsChan:
+// 		return &e
+// 	default:
+// 		return nil
+// 	}
+// }
 
 func (e *Event) GetDataType() DataType {
 	return e.dataType
